@@ -1,9 +1,8 @@
 import os
 import threading
 import socket
-import json
 import argparse
-import fnmatch
+import pickle
 
 # global variables
 stop = False
@@ -52,11 +51,30 @@ def signup():
 
     
 def listAccounts():
-    # list all or a subset of the accounts by text wildcard
-    # TODO
     os.system('cls||clear')
-    return 
-
+    # list all or a subset of the accounts by text wildcard
+    while True:
+        option = input("(1)List all \n(2)List by wildcard\n")
+        if option == "1":
+            client.send('LIST ALL'.encode('ascii'))
+            break
+        elif option == "2":
+            pattern = input("Input your search pattern: ")
+            client.send(('LIST '+pattern).encode('ascii'))
+            break
+        else: 
+            print("Invalid option, choose again")
+    
+    response = client.recv(1024).decode('ascii')
+    if response == "NOMATCHED":
+        print("No matched account found")
+    elif response == "MATCHED":
+        client.send("SENDMATCHED".encode('ascii'))
+        list_bytes = client.recv(4096)
+        list_accounts = pickle.loads(list_bytes)
+        for a in list_accounts:
+            print(a)
+        
 
 def receive():
     while True:
@@ -95,6 +113,8 @@ def choose_operations():
             signup()
         elif option == "3":
             listAccounts()
+        else: 
+            print("Invalid option, choose again")
     recieve_thread = threading.Thread(target=receive)
     recieve_thread.start()
 

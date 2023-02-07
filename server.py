@@ -1,6 +1,8 @@
 import threading
 import socket
 import json
+import pickle
+import fnmatch
 
 host = "100.91.14.32"
 port = 5555
@@ -58,9 +60,25 @@ def receive():
                 with open("accounts.json", "w") as f:
                     data[username] = {"password": password}
                     json.dump(data, f, indent=4)
-            
-        
-
-
+        elif operation.startswith("LIST"):
+            pattern = operation.split(" ")[1]
+            with open('accounts.json') as f:
+                    data = json.load(f)
+            if pattern == "ALL":
+                keys = list(data.keys())
+            else:
+                keys = []
+                for k in list(data.keys()):
+                    if fnmatch.fnmatch(k, pattern):
+                        keys.append(k)
+            if len(keys) == 0:
+                client.send("NOMATCHED".encode('ascii'))
+            else:
+                client.send("MATCHED".encode('ascii'))
+                next_line = client.recv(1024).decode('ascii')
+                if next_line == "SENDMATCHED":
+                    lists = pickle.dumps(keys)
+                    client.send(lists)   
+                    
 
 receive()
