@@ -1,7 +1,34 @@
 {
+    "example": {
+        "password": "123"
+    },
     "xinyu": {
-        "password": 262,
+        "password": "262",
         "ip": "100.91.14.32",
         "port": 5555
+    },
+    "sally": {
+        "password": "123"
+    },
+    "carmen": {
+        "password": "131"
+    },
+    "lily": {
+        "password": "167"
+    },
+    "sophy": {
+        "password": "456"
+    },
+    "nancy": {
+        "password": "678"
+    },
+    "eva": {
+        "password": "890"
+    },
+    "kloe": {
+        "password": "145"
+    },
+    "kim": {
+        "password": "145"
     }
 }

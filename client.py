@@ -3,20 +3,20 @@ import threading
 import socket
 import json
 import argparse
+import fnmatch
+
 # global variables
 stop = False
+username = "example"
+password = "123"
 
 
 
 def login():
     os.system("cls||clear")
-    # load all accounts
-    with open("accounts.json") as f:
-        data = json.load(f)
- 
     global username
     global password
-    username = input("Enter the username:")
+    username = input("Enter the username: ")
     password = input("Enter the password: ")
     # check the validy of the login at the server side
     global client
@@ -26,9 +26,28 @@ def login():
 
 
 def signup():
+    os.system('cls||clear')
+    global username
+    global password
+    while True:
+        username = input("Create your username: ")
+        # check if username is unique
+        with open("accounts.json", "r") as f:
+            data = json.load(f)
+        if username in data:
+            print("Username already exists! Change to another one.")
+        else:
+            break
+    password = input("Create your password: ")
+    # store the new created account into the json file
+    with open("accounts.json", "w") as f:
+        data[username] = {"password": password}  # TODO: check both integers and strings work
+        json.dump(data, f, indent=4)
+    
+def listAccounts():
+    # list all or a subset of the accounts by text wildcard
     # TODO
-    return
-
+    return 
 
 
 def receive():
@@ -57,12 +76,14 @@ def receive():
 def main():
     while True:
         os.system("cls||clear")
-        option = input("(1)Sign in\n(2)Sign up \n")
+        option = input("(1)Sign in\n(2)Sign up\n(3)List existing accounts\n")
         if option == "1":
             login()
             break
         elif option == "2":
             signup()
+        elif option == "3":
+            listAccounts()
 
     recieve_thread = threading.Thread(target=receive)
     recieve_thread.start()

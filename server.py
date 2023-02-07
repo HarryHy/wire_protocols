@@ -13,8 +13,6 @@ server.listen()
 print('Listening...')
 
 def receive():
-    with open('accounts.json') as f:
-        data = json.load(f)
     while True:
         # connect with the client
         client, addr = server.accept()
@@ -25,7 +23,9 @@ def receive():
         client.send('PASSWORD'.encode('ascii'))
         password = client.recv(1024).decode('ascii')
         # check if password matches with user name
-        if int(password) != int(data[username]["password"]):
+        with open('accounts.json') as f:
+            data = json.load(f)
+        if password != data[username]["password"]:
             client.send("REJECT".encode('ascii'))
             client.close()
             continue # returns the control to the beginning of the while loop
