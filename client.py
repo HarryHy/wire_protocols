@@ -12,9 +12,6 @@ password = "123"
 
 # def check_dupname():
 
-
-
-
 def login():
     client.send('LOGIN'.encode('ascii'))
     os.system("cls||clear")
@@ -22,6 +19,8 @@ def login():
     global password
     username = input("Enter the username: ")
     password = input("Enter the password: ")
+    global stop
+    stop = False
     
     
 
@@ -77,30 +76,50 @@ def listAccounts():
         
 
 def receive():
-    while True:
-        global stop
-        if stop: break
-        try:
+    print("in receive")
+    try:
+        while True:
+            global stop
+            if stop: break
+        
             message = client.recv(1024).decode('ascii')
+            print("message is ", message)
             if message == "USERNAME":
+                print("client trying to send username")
                 client.send(username.encode('ascii'))
                 next_message = client.recv(1024).decode('ascii')
                 if next_message == 'PASSWORD':
                     client.send(password.encode('ascii'))
-                    if client.recv(1024).decode('ascii') == "REJECT":
+                    check_state = client.recv(1024).decode('ascii')
+                    if check_state == "REJECT":
                         print("Wrong password! Try again")
                         stop = True
-                    # elif :
-                    #     # TODO
+                    elif check_state == "NOUSER":
+                        print("No such user")
+                        stop = True
+                    else:
+                        #print(s)
+                        print("Successfully logged in as ", username)
+                        retry = input("Retry ? y/n")
+                        if retry is "y":
+                            client.send('RESTART'.encode('ascii'))
+                            choose_operations()
+                        else:
+                            #TODO 
+                            client.send('BREAK'.encode('ascii'))
+                            return
                 # elif next_message == 'DUPNAME':
             elif message == "FAIL":
                 print("You've reach the attemp limit, connection failed.")
             else: 
+                print(" the message is not on the list")
                 print(message)
-        except Exception as e:
-            print('Error Occurred: ', e)
-            client.close()
-            break
+        print("out of while loop")
+    except Exception as e:
+        print('Error Occurred: ', e)
+        client.close()
+
+    #client.send('RESTART'.encode('ascii'))
     choose_operations()
 
 def choose_operations():
