@@ -12,7 +12,6 @@ password = "123"
 
 # def check_dupname():
 
-
 def login():
     client.send('LOGIN'.encode('ascii'))
     os.system("cls||clear")
