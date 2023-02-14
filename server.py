@@ -11,7 +11,7 @@ messages = queue.Queue()
 users = []
 
 
-def receive(LOGIN_LIMIT = 5, login_times = 0):
+def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
     # connect with the client
     client, addr = server.accept()
     print(f"Connected with {str(addr)}")
@@ -143,6 +143,11 @@ def message_receiver(client, talkto, user):
                 #分发给user 
             else:
                 client.send("CHATLATER".encode('ascii'))
+                recv_message = client.recv(1024).decode('ascii')
+                user_talk_to = recv_message.split("~")[1]
+                user_itself = recv_message.split("~")[2]
+                user_message = recv_message.split("~")[3]
+                
                 #write to the json file 
                 # 这部分不知道 怎么写到 json file 里面 
                 #收到消息
@@ -168,7 +173,12 @@ if __name__ == '__main__':
     server.listen()
     print('Listening...')
     try:
-        receive(LOGIN_LIMIT, login_times )
+        while True:
+            client, addr = server.accept()
+            #print(f"Connected with {str(addr)}")    
+            t = threading.Thread(target=receive, args=(client, addr, LOGIN_LIMIT, login_times))
+            t.start()
+        server.close()     
     except Exception as e:
         print('Error Occurred: ', e)
         server.close() 
