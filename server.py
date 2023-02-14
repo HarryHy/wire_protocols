@@ -1,9 +1,13 @@
-import threading
 import socket
 import json
 import pickle
 import fnmatch
+import uuid
+import queue
+import threading
+lock = threading.Lock()
 
+messages = queue.Queue()
 
 
 def receive(LOGIN_LIMIT = 5, login_times = 0):
@@ -16,7 +20,7 @@ def receive(LOGIN_LIMIT = 5, login_times = 0):
         print("operation is ", operation)
         if operation == "LOGIN":
             login_times += 1
-            print("logging")
+            print("logging...")
             if login_times > LOGIN_LIMIT:
                 client.send("FAIL".encode('ascii'))
                 client.close()
@@ -24,13 +28,14 @@ def receive(LOGIN_LIMIT = 5, login_times = 0):
             # check whether username and password match
             # ask the client for the username
             client.send("USERNAME".encode('ascii'))
-            print("already sent USERNAME")
+            # print("already sent USERNAME")
             username = client.recv(1024).decode('ascii')
-            print("username is ", username)
+            # print("username is ", username)
             client.send('PASSWORD'.encode('ascii'))
             password = client.recv(1024).decode('ascii')
-            print("password is ", password)
+            # print("password is ", password)
             # check if password matches with user name
+
             with open('accounts.json') as f:
                 data = json.load(f)
             if username not in data.keys():
@@ -44,6 +49,8 @@ def receive(LOGIN_LIMIT = 5, login_times = 0):
                 print("Successfully logged in! as ", username)
                 client.send("ACCEPT".encode('ascii'))
                 logins.add(username)
+                global user
+                user = username
                 #continue
             #TODO
         elif operation.startswith("SIGNUP"):
@@ -56,9 +63,11 @@ def receive(LOGIN_LIMIT = 5, login_times = 0):
             else:
                 client.send('NONDUPNAME'.encode('ascii'))
                 password = client.recv(1024).decode('ascii')
+                # generate a unique uuid for the new account
+                id = uuid.uuid1()
                 # store the new created account into the json file
                 with open("accounts.json", "w") as f:
-                    data[username] = {"password": password}
+                    data[username] = {"password": password, "id": uuid}
                     json.dump(data, f, indent=4)
         elif operation.startswith("LIST"):
             pattern = operation.split(" ")[1]
@@ -79,7 +88,41 @@ def receive(LOGIN_LIMIT = 5, login_times = 0):
                 if next_line == "SENDMATCHED":
                     lists = pickle.dumps(keys)
                     client.send(lists)   
-        
+        elif operation.startswith("TALKTO"):
+            global talkto
+            talkto = operation.split(" ")[1]
+            # check if the talkto username is valid
+            with open('accounts.json') as f:
+                data = json.load(f)
+            if talkto in data:
+                client.send("VALTALKTO".encode('ascii'))
+            else:
+                lists = pickle.dumps(list(data.keys()))
+                client.send(lists)
+        elif operation == "STARTHIST":
+            # send the queued messages from talkto to user
+            with open("histories.json", "r+") as f:
+                data = json.load(f)
+                # from talkto to user
+                messages = data[talkto][user]
+                if not len(messages)==0:
+                    tosend = pickle.dumps(messages)
+                    client.send(tosend)
+                # after send all the queued messages, clear the history
+                data[talkto][user] = []
+
+        elif operation == "STARTCHAT":
+            # check if the person trying to talkto is online
+            # if online, start chat
+            # if offline, queue the user's messages
+            if talkto in logins:
+                client.send("CHATNOW".encode('ascii'))
+            else:
+                client.send("CHATLATER".encode('ascii'))
+
+            
+
+
         elif operation.startswith("BREAK"):
             break
         

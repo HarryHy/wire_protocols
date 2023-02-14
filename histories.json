@@ -1,0 +1,9 @@
+{
+    "xinyu": {
+        "sally": ["hello", "how are you"]
+    },
+    "sally": {
+        "carmen": ["hi, carmen long time no see", "hihi"],
+        "xinyu": ["I'm good"]
+    }
+}

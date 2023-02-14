@@ -39,6 +39,7 @@ def signup():
             if dup_message == "DUPNAME":
                 print("Username already exists! Change to another one.")
             elif dup_message == "NONDUPNAME":
+                client.send(id.encode('ascii'))
                 password = input("Create your password: ")
                 client.send(password.encode('ascii'))
                 break
@@ -83,9 +84,9 @@ def receive():
             if stop: break
         
             message = client.recv(1024).decode('ascii')
-            print("message is ", message)
+            # print("message is ", message)
             if message == "USERNAME":
-                print("client trying to send username")
+                # print("client trying to send username")
                 client.send(username.encode('ascii'))
                 next_message = client.recv(1024).decode('ascii')
                 if next_message == 'PASSWORD':
@@ -100,14 +101,15 @@ def receive():
                     else:
                         #print(s)
                         print("Successfully logged in as ", username)
-                        retry = input("Retry ? y/n")
-                        if retry is "y":
-                            client.send('RESTART'.encode('ascii'))
-                            choose_operations()
-                        else:
-                            #TODO 
-                            client.send('BREAK'.encode('ascii'))
-                            return
+
+                        # retry = input("Retry ? y/n ")
+                        # if retry is "y":
+                        #     client.send('RESTART'.encode('ascii'))
+                        #     choose_operations()
+                        # else:
+                        #     #TODO 
+                        #     client.send('BREAK'.encode('ascii'))
+                        #     return
                 # elif next_message == 'DUPNAME':
             elif message == "FAIL":
                 print("You've reach the attemp limit, connection failed.")
@@ -136,6 +138,72 @@ def choose_operations():
             print("Invalid option, choose again")
     recieve_thread = threading.Thread(target=receive)
     recieve_thread.start()
+    recieve_thread.join()
+
+def choose_talkto():
+    choose_talk_to_stop = False
+    while True:
+        if choose_talk_to_stop: 
+            break
+        global talkto
+        talkto = input("Who do you want to talk to? (specify the username) ")
+        client.send(("TALKTO "+talkto).encode('ascii'))
+        next_message = client.recv(1024).decode('ascii')
+        if next_message == "VALTALKTO":
+            print("Start your conversation with "+talkto + "!")
+            choose_talk_to_stop = True
+        else:
+            print("The username you were trying to talk to doesn't exist, please try another one. The available users are: \n")
+            list_accounts = pickle.loads(next_message)
+            for a in list_accounts:
+                print(a)
+
+def start_conversation():
+    os.system('cls||clear')
+    client.send('STARTHIST'.encode('ascii'))
+    # receive all the queued messages
+    list_bytes = client.recv(4096)
+    list_messages = pickle.loads(list_bytes)
+    for m in list_messages:
+        print(m)
+    # after receive the history, start to chat
+    client.send('STARTCHAT'.encode('ascii'))
+    next_message = client.recv(1024).decode('ascii')
+    # talk to someone online
+    # what if the other online user logout when chatting and the user still wants to leave messages
+    if next_message == "CHATNOW":
+        try:
+            while True:
+                global stop
+                if stop: break
+
+                
+
+        except Exception as e:
+            print('Error Occurred: ', e)
+            client.close()
+    # Same Queston :what if the other user login when leaving offline message
+    elif next_message == "CHATLATER":
+        try:
+            print("The user you are trying to reach is not online now, please leave a message")
+            while True:
+                global stop
+                if stop: break
+
+        
+        except Exception as e:
+            print('Error Occurred: ', e)
+            client.close()
+
+
+
+
+    
+
+    
+
+
+
 
 
 def main():
@@ -144,8 +212,13 @@ def main():
     # connect to the host
     client.connect((host, port))
     os.system("cls||clear")
-    choose_operations()
-
+    choose_operations()  # finished login here
+    # choose who to talk to
+    choose_talkto()
+    # now start conversation
+    recieve_thread = threading.Thread(target=start_conversation)
+    recieve_thread.start()
+    # recieve_thread.join()
 
 
 
