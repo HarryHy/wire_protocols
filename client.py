@@ -101,16 +101,6 @@ def receive():
                     else:
                         #print(s)
                         print("Successfully logged in as ", username)
-
-                        # retry = input("Retry ? y/n ")
-                        # if retry is "y":
-                        #     client.send('RESTART'.encode('ascii'))
-                        #     choose_operations()
-                        # else:
-                        #     #TODO 
-                        #     client.send('BREAK'.encode('ascii'))
-                        #     return
-                # elif next_message == 'DUPNAME':
             elif message == "FAIL":
                 print("You've reach the attemp limit, connection failed.")
             else: 
@@ -167,33 +157,32 @@ def start_conversation():
     for m in list_messages:
         print(m)
     # after receive the history, start to chat
+
     client.send('STARTCHAT'.encode('ascii'))
-    next_message = client.recv(1024).decode('ascii')
-    # talk to someone online
-    # what if the other online user logout when chatting and the user still wants to leave messages
-    if next_message == "CHATNOW":
-        try:
-            while True:
-                global stop
-                if stop: break
+    try:
+        online_switch = False
+        previous_message = ''
+        while True:
+            next_message = client.recv(1024).decode('ascii')
 
+            if previous_message != next_message and previous_message != '':
+                if previous_message == "CHATNOW":
+                    print("the user just log out")
+                else:
+                    print("the user is online now !")
+                    
+            if next_message == "CHATNOW":
+                input_message = input()
+                client.send(('CHATTING~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                previous_message = next_message
+            elif next_message == "CHATLATER":
+                offline_input_message = input()
+                client.send(('OFFLINE_CHATTING~' + talkto +"~" + username + "~"+ offline_input_message).encode('ascii'))
+                previous_message = next_message
                 
-
-        except Exception as e:
-            print('Error Occurred: ', e)
-            client.close()
-    # Same Queston :what if the other user login when leaving offline message
-    elif next_message == "CHATLATER":
-        try:
-            print("The user you are trying to reach is not online now, please leave a message")
-            while True:
-                global stop
-                if stop: break
-
-        
-        except Exception as e:
-            print('Error Occurred: ', e)
-            client.close()
+    except Exception as e:
+        print('Error Occurred: ', e)
+        client.close()
 
 
 

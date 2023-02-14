@@ -8,6 +8,7 @@ import threading
 lock = threading.Lock()
 
 messages = queue.Queue()
+users = []
 
 
 def receive(LOGIN_LIMIT = 5, login_times = 0):
@@ -115,17 +116,41 @@ def receive(LOGIN_LIMIT = 5, login_times = 0):
             # check if the person trying to talkto is online
             # if online, start chat
             # if offline, queue the user's messages
+            '''
             if talkto in logins:
                 client.send("CHATNOW".encode('ascii'))
             else:
                 client.send("CHATLATER".encode('ascii'))
-
-            
+            '''
+            message_receiver(client, talkto, user)
+            #if the user want to start over, the chattiing part is wrapped in the receive.
 
 
         elif operation.startswith("BREAK"):
             break
-        
+
+def message_receiver(client, talkto, user):
+    # A function handling the chatting part
+    try:
+        while True:
+            if talkto in logins:
+                client.send("CHATNOW".encode('ascii'))
+                recv_message = client.recv(1024).decode('ascii')
+                user_talk_to = recv_message.split("~")[1]
+                user_itself = recv_message.split("~")[2]
+                user_message = recv_message.split("~")[3]
+                # how to send to talkto ?
+                #分发给user 
+            else:
+                client.send("CHATLATER".encode('ascii'))
+                #write to the json file 
+                # 这部分不知道 怎么写到 json file 里面 
+                #收到消息
+                #分发给 json file
+
+    except:
+        server.close()
+    return
                     
 
 if __name__ == '__main__':
