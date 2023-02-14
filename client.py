@@ -77,7 +77,6 @@ def listAccounts():
         
 
 def receive():
-    print("in receive")
     try:
         while True:
             global stop
@@ -100,7 +99,9 @@ def receive():
                         stop = True
                     else:
                         #print(s)
-                        print("Successfully logged in as ", username)
+                        print("Successfully logged in as", username)
+                        # now start conversation
+                        start_conversation()
 
                         # retry = input("Retry ? y/n ")
                         # if retry is "y":
@@ -113,10 +114,11 @@ def receive():
                 # elif next_message == 'DUPNAME':
             elif message == "FAIL":
                 print("You've reach the attemp limit, connection failed.")
-            else: 
-                print(" the message is not on the list")
-                print(message)
-        print("out of while loop")
+                stop = True
+            # else: 
+            #     print(" the message is not on the list")
+            #     print(message)
+        # print("out of while loop")
     except Exception as e:
         print('Error Occurred: ', e)
         client.close()
@@ -141,6 +143,7 @@ def choose_operations():
     recieve_thread.join()
 
 def choose_talkto():
+    # os.system('cls||clear')
     stop = False
     while True:
         if stop: 
@@ -158,28 +161,65 @@ def choose_talkto():
             for a in list_accounts:
                 print(a)
 
-def start_conversation():
-    os.system('cls||clear')
-    client.send('STARTHIST'.encode('ascii'))
-    # receive all the queued messages
-    list_bytes = client.recv(4096)
-    list_messages = pickle.loads(list_bytes)
-    for m in list_messages:
-        print(m)
-    # after receive the history, start to chat
-    client.send('STARTCHAT'.encode('ascii'))
-    next_message = client.recv(1024).decode('ascii')
-    if next_message == "CHATNOW":
-        try:
-            while True:
-                global stop
-                if stop: break
+def write_messages():
+    while True:
+        global stop
+        if stop: break
+        #Getting Messages
+        message = f'{talkto}:{input("")}'
+        print("my message to send is: " + message)
+        if message[len(talkto)+2:].startswith('/'):
+            if message[len(talkto)+2:].startswith('/stop'):
+                # stop the conversation
+                client.send("STOPCHAT".encode('ascii'))
+                break
+        else:
+            client.send(message.encode('ascii'))
+    print("Ended chat with f'{talkto}'!")
 
                 
 
+def receive_messages():
+    while True:
+        try:
+            message = client.recv(1024).decode('ascii')
+            print(message)
         except Exception as e:
             print('Error Occurred: ', e)
             client.close()
+            break
+
+
+
+
+
+def start_conversation():
+
+        # choose who to talk to
+        choose_talkto()
+        client.send('STARTHIST'.encode('ascii'))
+        # receive all the queued messages
+        print("start to receive the queued messages")
+        list_bytes = client.recv(4096)
+        list_messages = pickle.loads(list_bytes)
+        for m in list_messages:
+            print(talkto + ": " + m)
+        # after receive the history, start to chat
+
+        write_thread = threading.Thread(target=write_messages)
+        write_thread.start()
+        recieve_thread = threading.Thread(target=receive_messages)
+        recieve_thread.start()
+
+        # client.send('STARTCHAT'.encode('ascii'))
+        # next_message = client.recv(1024).decode('ascii')
+        # if next_message == "CHATNOW":
+            
+        # elif next_message == "CHATLATER":
+        #     print("The user you were trying to talk to is offline, leave a message for him/her")
+        #     write_thread = threading.Thread(target=write_messages, args=("LATER",))
+        #     write_thread.start()
+
 
 
 
@@ -196,13 +236,11 @@ def main():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # connect to the host
     client.connect((host, port))
-    os.system("cls||clear")
+    # os.system("cls||clear")
     choose_operations()  # finished login here
-    # choose who to talk to
-    choose_talkto()
-    # now start conversation
-    recieve_thread = threading.Thread(target=start_conversation)
-    recieve_thread.start()
+    
+    # recieve_thread = threading.Thread(target=start_conversation)
+    # recieve_thread.start()
     # recieve_thread.join()
 
 

@@ -1,9 +1,17 @@
 {
     "xinyu": {
-        "sally": ["hello", "how are you"]
+        "sally": [
+            "hello",
+            "how are you",
+            " hi sally I miss you how are you recently",
+            " it's feburary right now"
+        ]
     },
     "sally": {
-        "carmen": ["hi, carmen long time no see", "hihi"],
-        "xinyu": ["I'm good"]
+        "carmen": [
+            "hi, carmen long time no see",
+            "hihi"
+        ],
+        "xinyu": []
     }
 }
