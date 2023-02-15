@@ -221,8 +221,12 @@ def message_receiver(client, talkto, user):
                 lock.release()
 
     except:
-        if server:
-            server.close()
+        #This user try to logout or encounter connection error
+        clients.pop(user)
+        logins.remove(user)
+        if client:
+            client.close()
+
     return
                     
 
@@ -257,4 +261,4 @@ if __name__ == '__main__':
         print("stop the thread")
         t.join()
         print("stop the server")
-        server.close() 
+        server.close()
