@@ -158,10 +158,13 @@ def start_conversation():
     # choose_talkto()
     client.send('STARTHIST'.encode('ascii'))
     # receive all the queued messages
-    list_bytes = client.recv(4096)
-    list_messages = pickle.loads(list_bytes)
-    for m in list_messages:
-        print(talkto + " : " + m)
+    flag = client.recv(1024).decode('ascii')
+    if flag != "EMPTY":
+        list_bytes = client.recv(4096)
+        list_messages = pickle.loads(list_bytes)
+        for m in list_messages:
+            print(talkto + " : " + m)
+    print("--------------start to chat-----------------")
     # after receive the history, start to chat
 
     try:
@@ -173,40 +176,10 @@ def start_conversation():
         print('Error Occurred: ', e)
         client.close()
 
-    '''
-    try:
-        online_switch = False
-        previous_message = ''
-        while True:
-            next_message = client.recv(1024).decode('ascii')
-
-            if previous_message != next_message and previous_message != '':
-                if previous_message == "CHATNOW":
-                    print("the user just log out")
-                else:
-                    print("the user is online now !")
-
-            if next_message == "CHATNOW":
-                input_message = input()
-                client.send(('CHATTING~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
-                previous_message = next_message
-
-            elif next_message == "CHATLATER":
-                offline_input_message = input()
-                client.send(('OFFLINE_CHATTING~' + talkto +"~" + username + "~"+ offline_input_message).encode('ascii'))
-                previous_message = next_message
-                
-    except Exception as e:
-        print('Error Occurred: ', e)
-        client.close()
-    '''
-
 
 def write_messages():
     try:
         client.send('STARTCHAT'.encode('ascii'))
-        online_switch = False
-        previous_message = ''
 
         chat_break = False
         while True:
@@ -214,48 +187,41 @@ def write_messages():
             if chat_break:
                 break
             
-            next_message = client.recv(1024).decode('ascii')
+            input_message = input()
+            if input_message == "\exit":
+                chat_break = True
+                client.send(('EXIT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                break
+            else:
+                print(username + " : " + input_message)
+                client.send(('CHAT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
 
-            if previous_message != next_message and previous_message != '':
-                if previous_message == "CHATNOW":
-                    print("the user just logged out")
-                else:
-                    print("the user is online now !")
-
-            if next_message == "CHATNOW":
-                input_message = input()
-                if input_message == "\exit":
-                    chat_break = True
-                    client.send(('CHATTING~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
-                    break
-                client.send(('CHATTING~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
-                previous_message = next_message
-                
-            elif next_message == "CHATLATER":
-                offline_input_message = input()
-                if offline_input_message == "\exit":
-                    chat_break = True
-                    client.send(('OFFLINE_CHATTING~' + talkto +"~" + username + "~"+ offline_input_message).encode('ascii'))
-                    break
-                client.send(('OFFLINE_CHATTING~' + talkto +"~" + username + "~"+ offline_input_message).encode('ascii'))
-                previous_message = next_message
-                
     except Exception as e:
         print('Error Occurred: ', e)
         client.close()
 
-
 def receive_messages():
+    online_flag = False
+    omit_message = False
     while True:
         try:
             message = client.recv(1024).decode('ascii')
-            print(message)
+            if message.startswith("CHATNOW"):
+                if online_flag == False:
+                    online_flag = True
+                    print("this user is online now")
+                    omit_message = False
+
+                print(message[7:])
+            elif message.startswith("CHATLATER"):
+                online_flag = False
+                if not omit_message:
+                    print("this user is not online now, your message will not be received")
+                omit_message = True
         except Exception as e:
             print('Error Occurred: ', e)
             client.close()
             break
-
-
 
 
 
