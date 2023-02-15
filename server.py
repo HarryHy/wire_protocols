@@ -5,10 +5,14 @@ import fnmatch
 import uuid
 import queue
 import threading
-lock = threading.Lock()
+import os
+import os.path
+import sys
 
+lock = threading.Lock()
 messages = queue.Queue()
 users = []
+global talkto
 
 
 def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
@@ -49,6 +53,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
             else:
                 print("Successfully logged in! as ", username)
                 client.send("ACCEPT".encode('ascii'))
+                clients[username] = client
                 logins.add(username)
                 global user
                 user = username
@@ -127,10 +132,16 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
 
 
         elif operation.startswith("BREAK"):
+            server.close()
+            break
+        else:
+            print("encounter error")
+            server.close()
             break
 
 def message_receiver(client, talkto, user):
     # A function handling the chatting part
+    print("in the message receiver")
     try:
         while True:
             if talkto in logins:
@@ -139,19 +150,46 @@ def message_receiver(client, talkto, user):
                 user_talk_to = recv_message.split("~")[1]
                 user_itself = recv_message.split("~")[2]
                 user_message = recv_message.split("~")[3]
+                if user_message == "\exit":
+                    #user log out 
+                    clients.pop(user_itself)
+                    logins.remove(user_itself)
+                    client.close()
+                    break
                 # how to send to talkto ?
-                #分发给user 
+                #分发给use
+                # sender recver message 
+                clients[user_talk_to].send((user_itself + ": "+user_message).encode('ascii')) 
             else:
                 client.send("CHATLATER".encode('ascii'))
                 recv_message = client.recv(1024).decode('ascii')
                 user_talk_to = recv_message.split("~")[1]
                 user_itself = recv_message.split("~")[2]
                 user_message = recv_message.split("~")[3]
-                
+                if user_message == "\exit":
+                    #user log out 
+                    clients.pop(user_itself)
+                    logins.remove(user_itself)
+                    client.close()
+                    break
+
+
                 #write to the json file 
                 # 这部分不知道 怎么写到 json file 里面 
                 #收到消息
                 #分发给 json file
+                print("the user is not logged in")
+                lock.acquire()
+                with open("histories.json", "r") as f:
+                    data = json.load(f)
+                    # from user to talkto
+                    print("now writing to json")
+                    old_list = data[user_itself][user_talk_to]
+                    old_list.append(user_message)
+                    data[user_itself][user_talk_to] = old_list
+                with open("histories.json", 'w') as f:
+                    json.dump(data, f, indent=4)
+                lock.release()
 
     except:
         server.close()
@@ -168,16 +206,21 @@ if __name__ == '__main__':
 
     login_times = 0
 
+    talkto = ''
+    clients = {} 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    os.chdir(sys.path[0])
     server.bind((host, port))
-    server.listen()
+    server.listen(10)
     print('Listening...')
     try:
         while True:
             client, addr = server.accept()
             #print(f"Connected with {str(addr)}")    
-            t = threading.Thread(target=receive, args=(client, addr, LOGIN_LIMIT, login_times))
+            t = threading.Thread(target=receive, args=(client, addr))
             t.start()
+            t.join()
+            #receive(client, addr)
         server.close()     
     except Exception as e:
         print('Error Occurred: ', e)

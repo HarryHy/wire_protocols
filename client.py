@@ -101,6 +101,7 @@ def receive():
                     else:
                         #print(s)
                         print("Successfully logged in as ", username)
+                        return
             elif message == "FAIL":
                 print("You've reach the attemp limit, connection failed.")
             else: 
@@ -131,6 +132,7 @@ def choose_operations():
     recieve_thread.join()
 
 def choose_talkto():
+    print("please choose who to talk to")
     choose_talk_to_stop = False
     while True:
         if choose_talk_to_stop: 
@@ -142,6 +144,7 @@ def choose_talkto():
         if next_message == "VALTALKTO":
             print("Start your conversation with "+talkto + "!")
             choose_talk_to_stop = True
+            break
         else:
             print("The username you were trying to talk to doesn't exist, please try another one. The available users are: \n")
             list_accounts = pickle.loads(next_message)
@@ -149,16 +152,26 @@ def choose_talkto():
                 print(a)
 
 def start_conversation():
-    os.system('cls||clear')
+    #os.system('cls||clear')
+    choose_talkto()
     client.send('STARTHIST'.encode('ascii'))
     # receive all the queued messages
     list_bytes = client.recv(4096)
     list_messages = pickle.loads(list_bytes)
     for m in list_messages:
-        print(m)
+        print(talkto + " : " + m)
     # after receive the history, start to chat
 
-    client.send('STARTCHAT'.encode('ascii'))
+    try:
+        write_thread = threading.Thread(target=write_messages)
+        write_thread.start()
+        recieve_thread = threading.Thread(target=receive_messages)
+        recieve_thread.start()
+    except Exception as e:
+        print('Error Occurred: ', e)
+        client.close()
+
+    '''
     try:
         online_switch = False
         previous_message = ''
@@ -170,11 +183,12 @@ def start_conversation():
                     print("the user just log out")
                 else:
                     print("the user is online now !")
-                    
+
             if next_message == "CHATNOW":
                 input_message = input()
                 client.send(('CHATTING~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
                 previous_message = next_message
+
             elif next_message == "CHATLATER":
                 offline_input_message = input()
                 client.send(('OFFLINE_CHATTING~' + talkto +"~" + username + "~"+ offline_input_message).encode('ascii'))
@@ -183,31 +197,86 @@ def start_conversation():
     except Exception as e:
         print('Error Occurred: ', e)
         client.close()
+    '''
+
+
+def write_messages():
+    try:
+        client.send('STARTCHAT'.encode('ascii'))
+        online_switch = False
+        previous_message = ''
+
+        chat_break = False
+        while True:
+
+            if chat_break:
+                break
+            
+            next_message = client.recv(1024).decode('ascii')
+
+            if previous_message != next_message and previous_message != '':
+                if previous_message == "CHATNOW":
+                    print("the user just logged out")
+                else:
+                    print("the user is online now !")
+
+            if next_message == "CHATNOW":
+                input_message = input()
+                if input_message == "\exit":
+                    chat_break = True
+                    client.send(('CHATTING~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                    break
+                client.send(('CHATTING~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                previous_message = next_message
+                
+            elif next_message == "CHATLATER":
+                offline_input_message = input()
+                if offline_input_message == "\exit":
+                    chat_break = True
+                    client.send(('OFFLINE_CHATTING~' + talkto +"~" + username + "~"+ offline_input_message).encode('ascii'))
+                    break
+                client.send(('OFFLINE_CHATTING~' + talkto +"~" + username + "~"+ offline_input_message).encode('ascii'))
+                previous_message = next_message
+                
+    except Exception as e:
+        print('Error Occurred: ', e)
+        client.close()
+
+
+def receive_messages():
+    while True:
+        try:
+            message = client.recv(1024).decode('ascii')
+            print(message)
+        except Exception as e:
+            print('Error Occurred: ', e)
+            client.close()
+            break
 
 
 
 
-    
-
-    
 
 
 
 
 
 def main():
-    global client
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # connect to the host
-    client.connect((host, port))
-    os.system("cls||clear")
-    choose_operations()  # finished login here
-    # choose who to talk to
-    choose_talkto()
-    # now start conversation
-    recieve_thread = threading.Thread(target=start_conversation)
-    recieve_thread.start()
-    # recieve_thread.join()
+    try:
+        os.system("cls||clear")
+        global client
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # connect to the host
+        client.connect((host, port))
+        choose_operations()  # finished login here
+        # choose who to talk to
+        choose_talkto()
+        # now start conversation
+        recieve_thread = threading.Thread(target=start_conversation)
+        recieve_thread.start()
+        # recieve_thread.join()
+    except:
+        client.close()
 
 
 
@@ -218,6 +287,9 @@ if __name__ == '__main__':
     args = parse.parse_args()
     global host
     global port
+    #host = input("Enter the host: ")
+    #port = input("Enter the port: ")
+
     host = args.host
     port = args.port
     main()
