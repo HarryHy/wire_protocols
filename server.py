@@ -17,7 +17,7 @@ global talkto
 
 def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
     # connect with the client
-    client, addr = server.accept()
+    # client, addr = server.accept()
     print(f"Connected with {str(addr)}")
     while True:
         
@@ -219,7 +219,7 @@ if __name__ == '__main__':
             #print(f"Connected with {str(addr)}")    
             t = threading.Thread(target=receive, args=(client, addr))
             t.start()
-            t.join()
+            # t.join()
             #receive(client, addr)
         server.close()     
     except Exception as e:

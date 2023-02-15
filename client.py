@@ -82,6 +82,7 @@ def receive():
         while True:
             global stop
             if stop: break
+            print("in loop")
         
             message = client.recv(1024).decode('ascii')
             # print("message is ", message)
@@ -127,9 +128,10 @@ def choose_operations():
             listAccounts()
         else: 
             print("Invalid option, choose again")
-    recieve_thread = threading.Thread(target=receive)
-    recieve_thread.start()
-    recieve_thread.join()
+    # recieve_thread = threading.Thread(target=receive)
+    # recieve_thread.start()
+    receive()
+    # recieve_thread.join()
 
 def choose_talkto():
     print("please choose who to talk to")
@@ -153,7 +155,7 @@ def choose_talkto():
 
 def start_conversation():
     #os.system('cls||clear')
-    choose_talkto()
+    # choose_talkto()
     client.send('STARTHIST'.encode('ascii'))
     # receive all the queued messages
     list_bytes = client.recv(4096)
