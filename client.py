@@ -4,6 +4,7 @@ import socket
 import argparse
 import pickle
 
+clear = os.system("cls||clear")
 # global variables
 stop = False
 username = "example"
@@ -46,7 +47,8 @@ def signup():
 
         except Exception as e:
             print('Error Occurred: ', e)
-            client.close()
+            if client:
+                client.close()
         
 
     
@@ -111,7 +113,8 @@ def receive():
         print("out of while loop")
     except Exception as e:
         print('Error Occurred: ', e)
-        client.close()
+        if client:
+            client.close()
 
     #client.send('RESTART'.encode('ascii'))
     choose_operations()
@@ -159,8 +162,10 @@ def start_conversation():
     client.send('STARTHIST'.encode('ascii'))
     # receive all the queued messages
     flag = client.recv(1024).decode('ascii')
+    print("flag is ", flag)
     if flag != "EMPTY":
         list_bytes = client.recv(4096)
+        #print("list_bytes is ", list_bytes)
         list_messages = pickle.loads(list_bytes)
         for m in list_messages:
             print(talkto + " : " + m)
@@ -174,7 +179,10 @@ def start_conversation():
         recieve_thread.start()
     except Exception as e:
         print('Error Occurred: ', e)
-        client.close()
+        write_thread.join()
+        recieve_thread.join()
+        if client:
+            client.close()
 
 
 def write_messages():
@@ -198,7 +206,7 @@ def write_messages():
 
     except Exception as e:
         print('Error Occurred: ', e)
-        client.close()
+        #client.close()
 
 def receive_messages():
     online_flag = False
@@ -220,8 +228,7 @@ def receive_messages():
                 omit_message = True
         except Exception as e:
             print('Error Occurred: ', e)
-            client.close()
-            break
+            #client.close()
 
 
 
@@ -244,7 +251,8 @@ def main():
         recieve_thread.start()
         # recieve_thread.join()
     except:
-        client.close()
+        if client:
+            client.close()
 
 
 

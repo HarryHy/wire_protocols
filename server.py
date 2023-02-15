@@ -119,23 +119,26 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     if user in data[talkto].keys():
                         # maybe data[talkto][user] will return a key not find error
                         messages = data[talkto][user]
-                        client.send("NOTEMPTY".encode('ascii'))
                         if not len(messages)==0:
+                            client.send("NOTEMPTY".encode('ascii'))
+                        #
                             tosend = pickle.dumps(messages)
                             client.send(tosend)
-                        # after send all the queued messages, clear the history
-                        print("------clear the message--------")
-                        #data[talkto][user] = []lock.acquire()
-                        lock.acquire()
-                        with open("histories.json", "r") as f:
-                            data = json.load(f)
-                            data[talkto][user] = []
-                        with open("histories.json", 'w') as f:
-                            json.dump(data, f, indent=4)
-                        lock.release()
                         
-                else:
-                    client.send("EMPTY".encode('ascii'))
+                        # after send all the queued messages, clear the history
+                            print("------clear the message--------")
+                            #data[talkto][user] = []lock.acquire()
+                            lock.acquire()
+                            with open("histories.json", "r") as f:
+                                data = json.load(f)
+                                data[talkto][user] = []
+                            with open("histories.json", 'w') as f:
+                                json.dump(data, f, indent=4)
+                            lock.release()
+                            print("------finish clean--------")
+                        
+                        else:
+                            client.send("EMPTY".encode('ascii'))
 
         elif operation == "STARTCHAT":
             # check if the person trying to talkto is online
@@ -152,11 +155,13 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
             break
 
         elif operation.startswith("BREAK"):
-            server.close()
+            if server:
+                server.close()
             break
         else:
             print("encounter error")
-            server.close()
+            if server:
+                server.close()
             break
 
 def message_receiver(client, talkto, user):
@@ -175,7 +180,8 @@ def message_receiver(client, talkto, user):
                     #user log out 
                     clients.pop(user_itself)
                     logins.remove(user_itself)
-                    client.close()
+                    if client:
+                        client.close()
                     break
                 # how to send to talkto ?
                 #分发给use
@@ -192,7 +198,8 @@ def message_receiver(client, talkto, user):
                     #user log out 
                     clients.pop(user_itself)
                     logins.remove(user_itself)
-                    client.close()
+                    if client:
+                        client.close()
                     break
 
 
@@ -214,7 +221,8 @@ def message_receiver(client, talkto, user):
                 lock.release()
 
     except:
-        server.close()
+        if server:
+            server.close()
     return
                     
 
@@ -246,4 +254,7 @@ if __name__ == '__main__':
         server.close()     
     except Exception as e:
         print('Error Occurred: ', e)
+        print("stop the thread")
+        t.join()
+        print("stop the server")
         server.close() 
