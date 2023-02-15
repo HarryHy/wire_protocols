@@ -1,8 +1,6 @@
 {
     "xinyu": {
         "sally": [
-            "hello",
-            "how are you",
             "hi"
         ]
     },
@@ -11,9 +9,6 @@
             "hi, carmen long time no see",
             "hihi"
         ],
-        "xinyu": [
-            "I'm good",
-            "hi"
-        ]
+        "xinyu": []
     }
 }
