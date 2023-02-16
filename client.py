@@ -9,7 +9,7 @@ clear = os.system("cls||clear")
 stop = False
 username = "example"
 password = "123"
-
+restart = False
 from datetime import datetime
 
 now = datetime.now()
@@ -165,7 +165,7 @@ def choose_talkto():
 
 def start_conversation():
     #os.system('cls||clear')
-    # choose_talkto()
+    choose_talkto()
     client.send('STARTHIST'.encode('ascii'))
     # receive all the queued messages
     flag = client.recv(1024).decode('ascii')
@@ -173,7 +173,7 @@ def start_conversation():
     if flag != "EMPTY":
         list_bytes = client.recv(4096)
         #print("list_bytes is ", list_bytes)
-        list_messages = pickle.loads(list_bytes)
+        list_messages = pickle.loadfs(list_bytes)
         for m in list_messages:
             print(talkto + " : " + m)
     print("--------------start to chat-----------------")
@@ -184,6 +184,7 @@ def start_conversation():
         write_thread.start()
         recieve_thread = threading.Thread(target=receive_messages)
         recieve_thread.start()
+
     except Exception as e:
         print('Error Occurred: ', e)
         write_thread.join()
@@ -191,6 +192,9 @@ def start_conversation():
         if client:
             client.close()
 
+class restart_conversation_exception(Exception):
+    def __init__(self, message):
+        print(message)
 
 def write_messages():
     try:
@@ -206,11 +210,19 @@ def write_messages():
             if input_message == "\exit":
                 chat_break = True
                 client.send(('EXIT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
-                break
+                print("end of exit")
+                return
+            elif input_message == "\switch":
+                chat_break = True
+                client.send(('SWITCH~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                print("end of switch")
+                raise restart_conversation_exception("restart")
             else:
                 print(username + " : " + input_message)
                 client.send(('CHAT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
-
+    except restart_conversation_exception:
+        start_conversation()
+        return
     except Exception as e:
         print('Error Occurred: ', e)
         #client.close()
@@ -233,6 +245,12 @@ def receive_messages():
                 if not omit_message:
                     print("this user is not online now, your message will not be received")
                 omit_message = True
+            elif message.startswith("EXIT"):
+                return
+            elif message.startswith("SWITCH"):
+                global restart
+                restart = True
+                return    
         except Exception as e:
             print('Error Occurred: ', e)
             #client.close()
@@ -251,11 +269,10 @@ def main():
         # connect to the host
         client.connect((host, port))
         choose_operations()  # finished login here
-        # choose who to talk to
-        choose_talkto()
-        # now start conversation
         recieve_thread = threading.Thread(target=start_conversation)
         recieve_thread.start()
+        print("restart is ", restart)
+        #print("end of recieving")
         # recieve_thread.join()
     except:
         if client:

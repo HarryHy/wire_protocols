@@ -34,14 +34,12 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                 # check whether username and password match
                 # ask the client for the username
                 client.send("USERNAME".encode('ascii'))
-                # print("already sent USERNAME")
                 username = client.recv(1024).decode('ascii')
-                # print("username is ", username)
+
                 client.send('PASSWORD'.encode('ascii'))
                 password = client.recv(1024).decode('ascii')
-                # print("password is ", password)
-                # check if password matches with user name
 
+                # check if password matches with user name
                 with open('accounts.json') as f:
                     data = json.load(f)
                 if username not in data.keys():
@@ -112,17 +110,15 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                 with open("histories.json", "r+") as f:
                     data = json.load(f)
                     # from talkto to user
-                    print("1")
+
                     print(talkto, data.keys())
                     if talkto in data.keys():
-                        print("2")
                         print(user, data[talkto].keys())
                         if user in data[talkto].keys():
                             # maybe data[talkto][user] will return a key not find error
                             messages = data[talkto][user]
                             if not len(messages)==0:
                                 client.send("NOTEMPTY".encode('ascii'))
-                            #
                                 tosend = pickle.dumps(messages)
                                 client.send(tosend)
                             
@@ -137,7 +133,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                                     json.dump(data, f, indent=4)
                                 lock.release()
                                 print("------finish clean--------")
-                            
+   
                             else:
                                 client.send("EMPTY".encode('ascii'))
                         else:
@@ -157,7 +153,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                 '''
                 message_receiver(client, talkto, user)
                 #if the user want to start over, the chattiing part is wrapped in the receive.
-                break
+                print("server chat breaking")
 
             elif operation.startswith("BREAK"):
                 if client:
@@ -210,9 +206,12 @@ def message_receiver(client, talkto, user):
                     #user log out 
                     clients.pop(user_itself)
                     logins.remove(user_itself)
-                    if client:
-                        client.close()
-                    break
+                    client.send("EXIT".encode('ascii'))
+                    return
+
+                if user_message == "\switch":
+                    client.send("SWITCH".encode('ascii'))
+                    return
 
 
                 #write to the json file 
