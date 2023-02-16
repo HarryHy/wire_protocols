@@ -9,7 +9,6 @@ clear = os.system("cls||clear")
 stop = False
 username = "example"
 password = "123"
-restart = False
 from datetime import datetime
 
 now = datetime.now()
@@ -173,7 +172,7 @@ def start_conversation():
     if flag != "EMPTY":
         list_bytes = client.recv(4096)
         #print("list_bytes is ", list_bytes)
-        list_messages = pickle.loadfs(list_bytes)
+        list_messages = pickle.loads(list_bytes)
         for m in list_messages:
             print(talkto + " : " + m)
     print("--------------start to chat-----------------")
@@ -271,8 +270,6 @@ def main():
         choose_operations()  # finished login here
         recieve_thread = threading.Thread(target=start_conversation)
         recieve_thread.start()
-        print("restart is ", restart)
-        #print("end of recieving")
         # recieve_thread.join()
     except:
         if client:
