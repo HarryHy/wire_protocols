@@ -75,7 +75,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     id = uuid.uuid1()
                     # store the new created account into the json file
                     with open("accounts.json", "w") as f:
-                        data[username] = {"password": password, "id": uuid}
+                        data[username] = {"password": password}
                         json.dump(data, f, indent=4)
             elif operation.startswith("LIST"):
                 pattern = operation.split(" ")[1]
@@ -140,6 +140,10 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                             
                             else:
                                 client.send("EMPTY".encode('ascii'))
+                        else:
+                                client.send("EMPTY".encode('ascii'))
+                    else:
+                        client.send("EMPTY".encode('ascii'))
 
             elif operation == "STARTCHAT":
                 # check if the person trying to talkto is online
@@ -166,8 +170,9 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                 if client:
                     client.close()
                 break
-    except:
+    except Exception as e:
         print("client error")
+        print(e)
         if client:
             client.close()
 
@@ -191,7 +196,6 @@ def message_receiver(client, talkto, user):
                     if client:
                         client.close()
                     break
-                # how to send to talkto ?
                 #分发给use
                 # sender recver message 
                 #clients[user_talk_to].send((user_itself + ": "+user_message).encode('ascii')) 
@@ -212,7 +216,6 @@ def message_receiver(client, talkto, user):
 
 
                 #write to the json file 
-                # 这部分不知道 怎么写到 json file 里面 
                 #收到消息
                 #分发给 json file
                 print("the user is not logged in")
@@ -221,9 +224,25 @@ def message_receiver(client, talkto, user):
                     data = json.load(f)
                     # from user to talkto
                     print("now writing to json")
-                    old_list = data[user_itself][user_talk_to]
-                    old_list.append(user_message)
-                    data[user_itself][user_talk_to] = old_list
+                    try:
+                        old_list = data[user_itself][user_talk_to]
+                        old_list.append(user_message)
+                        data[user_itself][user_talk_to] = old_list
+                    except:
+                        # data[user_itself] exists but data[user_itself][user_talk_to] is not 
+                        print("create a new key of dictionary")
+                        old_list = []
+                        old_list.append(user_message)
+                        try :
+                            data[user_itself][user_talk_to] = old_list
+                        except:
+                            # data[user_itself] not exists
+                            print("create a new dictionary of dictionary")
+                            data[user_itself] = {}
+                            old_list = []
+                            old_list.append(user_message)
+                            data[user_itself][user_talk_to] = old_list
+
                 with open("histories.json", 'w') as f:
                     json.dump(data, f, indent=4)
                 lock.release()

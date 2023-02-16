@@ -10,6 +10,11 @@ stop = False
 username = "example"
 password = "123"
 
+from datetime import datetime
+
+now = datetime.now()
+
+current_time = now.strftime("%H:%M:%S")
 
 # def check_dupname():
 
@@ -35,20 +40,22 @@ def signup():
         try:
             username = input("Create your username: ")
             # send the username to server for duplicate check
+            print("signup 1")
             client.send(('SIGNUP '+username).encode('ascii'))
             dup_message = client.recv(1024).decode('ascii')
+            print("signup 2")
             if dup_message == "DUPNAME":
                 print("Username already exists! Change to another one.")
             elif dup_message == "NONDUPNAME":
-                client.send(id.encode('ascii'))
+                #id = username+current_time
+                #client.send(id.encode('ascii'))
                 password = input("Create your password: ")
                 client.send(password.encode('ascii'))
                 break
 
         except Exception as e:
             print('Error Occurred: ', e)
-            if client:
-                client.close()
+
         
 
     
