@@ -3,7 +3,7 @@ import threading
 import socket
 import argparse
 import pickle
-
+lock = threading.Lock()
 clear = os.system("cls||clear")
 # global variables
 stop = False
