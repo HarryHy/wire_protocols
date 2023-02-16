@@ -161,7 +161,7 @@ def choose_talkto():
             if next_message.startswith("CHATNOW"):
                 print("the other user has already sent you a CHATNOW message before you specify him as the talkto")
             # message should be "VALTALKTO"
-            assert next_message == "VALTALKTO", "message should be VALTALKTO"
+            # assert next_message == "VALTALKTO", "message should be VALTALKTO"
             print("Start your conversation with "+talkto + "!")
             choose_talk_to_stop = True
             break
@@ -202,12 +202,12 @@ def start_conversation():
             print(talkto + " : " + m)
 
     # if talkto hasn't specify you as the talkto, wait here until he has specified
-    while True:
-        print("Waiting here until talkto has talked to back")
-        client.send("ASKTALKTOBACK".encode("ascii"))
-        response = client.recv(1024).decode('ascii')
-        if response == "TALKTOBACK":
-            break
+    # print("Waiting here until talkto has talked to back......")
+    # while True:
+    #     client.send("ASKTALKTOBACK".encode("ascii"))
+    #     response = client.recv(1024).decode('ascii')
+    #     if response == "TALKTOBACK":
+    #         break
     
     print("--------------the other user has talked to back! start to chat-----------------")
     # after receive the history, start to chat

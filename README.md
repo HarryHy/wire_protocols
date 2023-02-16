@@ -5,4 +5,3 @@
 3. the user login part has 1 message delay.(I.e the user is onine but the server still views this user is offline before recv the 1st message from it)
 4. Add logout system (safe exit)
 5. When sally is talking to carmen, still receives the messages from xinyu (should have been put into the histories
-6. when the user is login and talkto another user, she has to wait another user to talk to back before start the real conversation

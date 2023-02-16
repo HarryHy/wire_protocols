@@ -12,11 +12,13 @@ import sys
 lock = threading.Lock()
 messages = queue.Queue()
 users = []
-global talkto
-talkto_map = dict()
+# global talkto
+# global talkto_map
+# talkto_map = dict()
 
 
 def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
+    talkto = ""
     # connect with the client
     # client, addr = server.accept()
     print(f"Connected with {str(addr)}")
@@ -98,14 +100,13 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                         lock.release()
                         client.send(lists)   
             elif operation.startswith("TALKTO"):
-                global talkto
                 talkto = operation.split(" ")[1]
                 # check if the talkto username is valid
                 with open('accounts.json') as f:
                     data = json.load(f)
                 if talkto in data:
                     client.send("VALTALKTO".encode('ascii'))
-                    talkto_map[user] = talkto
+                    # talkto_map[user] = talkto
                 else:
                     print("this is a list of available users: ", list(data.keys()))
                     lock.acquire()
@@ -150,11 +151,11 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     else:
                         client.send("EMPTY".encode('ascii'))
 
-            elif operation == "ASKTALKTOBACK":
-                if talkto not in talkto_map or talkto_map[talkto] != user:
-                    client.send("NOTALKTOBACK".encode('ascii'))
-                else:
-                    client.send("TALKTOBACK".encode('ascii'))
+            # elif operation == "ASKTALKTOBACK":
+            #     if talkto not in talkto_map or talkto_map[talkto] != user:
+            #         client.send("NOTALKTOBACK".encode('ascii'))
+            #     else:
+            #         client.send("TALKTOBACK".encode('ascii'))
                 
             elif operation == "STARTCHAT":
                 # check if the person trying to talkto is online
@@ -234,7 +235,7 @@ def message_receiver(client, talkto, user):
                 #分发给 json file
                 print("the user is not logged in")
                 lock.acquire()
-                with open("histories.json", "r") as f:
+                with open("histories.json", "r+") as f:
                     data = json.load(f)
                     # from user to talkto
                     print("now writing to json")
@@ -281,7 +282,7 @@ if __name__ == '__main__':
 
     login_times = 0
 
-    talkto = ''
+    # talkto = ''
     clients = {} 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     os.chdir(sys.path[0])
