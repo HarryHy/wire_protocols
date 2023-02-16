@@ -3,6 +3,7 @@ import threading
 import socket
 import argparse
 import pickle
+lock = threading.Lock()
 
 clear = os.system("cls||clear")
 # global variables
@@ -79,7 +80,9 @@ def listAccounts():
     elif response == "MATCHED":
         client.send("SENDMATCHED".encode('ascii'))
         list_bytes = client.recv(4096)
+        lock.acquire()
         list_accounts = pickle.loads(list_bytes)
+        lock.release()
         for a in list_accounts:
             print(a)
         
@@ -151,16 +154,36 @@ def choose_talkto():
         global talkto
         talkto = input("Who do you want to talk to? (specify the username) ")
         client.send(("TALKTO "+talkto).encode('ascii'))
-        next_message = client.recv(1024).decode('ascii')
-        if next_message == "VALTALKTO":
+        next_message_bytes = client.recv(1024)
+        try:
+            next_message = next_message_bytes.decode('ascii')
+            print("inside try is ", next_message)
+            if next_message.startswith("CHATNOW"):
+                print("the other user has already sent you a CHATNOW message before you specify him as the talkto")
+            # message should be "VALTALKTO"
+            assert next_message == "VALTALKTO", "message should be VALTALKTO"
             print("Start your conversation with "+talkto + "!")
             choose_talk_to_stop = True
             break
-        else:
+        except:
             print("The username you were trying to talk to doesn't exist, please try another one. The available users are: \n")
-            list_accounts = pickle.loads(next_message)
+            lock.acquire()
+            list_accounts = pickle.loads(next_message_bytes)
+            lock.release()
             for a in list_accounts:
                 print(a)
+
+
+        # next_message = client.recv(1024).decode('ascii')  # error: 'ascii' codec can't decode byte
+        # if next_message == "VALTALKTO":
+        #     print("Start your conversation with "+talkto + "!")
+        #     choose_talk_to_stop = True
+        #     break
+        # else:
+        #     print("The username you were trying to talk to doesn't exist, please try another one. The available users are: \n")
+        #     list_accounts = pickle.loads(next_message.encode('ascii'))
+        #     for a in list_accounts:
+        #         print(a)
 
 def start_conversation():
     #os.system('cls||clear')
@@ -172,10 +195,21 @@ def start_conversation():
     if flag != "EMPTY":
         list_bytes = client.recv(4096)
         #print("list_bytes is ", list_bytes)
+        lock.acquire()
         list_messages = pickle.loads(list_bytes)
+        lock.release()
         for m in list_messages:
             print(talkto + " : " + m)
-    print("--------------start to chat-----------------")
+
+    # if talkto hasn't specify you as the talkto, wait here until he has specified
+    while True:
+        print("Waiting here until talkto has talked to back")
+        client.send("ASKTALKTOBACK".encode("ascii"))
+        response = client.recv(1024).decode('ascii')
+        if response == "TALKTOBACK":
+            break
+    
+    print("--------------the other user has talked to back! start to chat-----------------")
     # after receive the history, start to chat
 
     try:
@@ -268,8 +302,9 @@ def main():
         # connect to the host
         client.connect((host, port))
         choose_operations()  # finished login here
-        recieve_thread = threading.Thread(target=start_conversation)
-        recieve_thread.start()
+        # recieve_thread = threading.Thread(target=start_conversation)
+        # recieve_thread.start()
+        start_conversation()
         # recieve_thread.join()
     except:
         if client:

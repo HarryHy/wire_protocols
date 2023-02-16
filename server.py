@@ -13,6 +13,7 @@ lock = threading.Lock()
 messages = queue.Queue()
 users = []
 global talkto
+talkto_map = dict()
 
 
 def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
@@ -92,7 +93,9 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     client.send("MATCHED".encode('ascii'))
                     next_line = client.recv(1024).decode('ascii')
                     if next_line == "SENDMATCHED":
+                        lock.acquire()
                         lists = pickle.dumps(keys)
+                        lock.release()
                         client.send(lists)   
             elif operation.startswith("TALKTO"):
                 global talkto
@@ -102,13 +105,19 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     data = json.load(f)
                 if talkto in data:
                     client.send("VALTALKTO".encode('ascii'))
+                    talkto_map[user] = talkto
                 else:
+                    print("this is a list of available users: ", list(data.keys()))
+                    lock.acquire()
                     lists = pickle.dumps(list(data.keys()))
+                    lock.release()
                     client.send(lists)
             elif operation == "STARTHIST":
                 # send the queued messages from talkto to user
-                with open("histories.json", "r+") as f:
+                lock.acquire()
+                with open("histories.json", "r") as f:
                     data = json.load(f)
+                    lock.release()
                     # from talkto to user
 
                     print(talkto, data.keys())
@@ -141,6 +150,12 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     else:
                         client.send("EMPTY".encode('ascii'))
 
+            elif operation == "ASKTALKTOBACK":
+                if talkto not in talkto_map or talkto_map[talkto] != user:
+                    client.send("NOTALKTOBACK".encode('ascii'))
+                else:
+                    client.send("TALKTOBACK".encode('ascii'))
+                
             elif operation == "STARTCHAT":
                 # check if the person trying to talkto is online
                 # if online, start chat
