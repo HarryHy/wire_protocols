@@ -13,7 +13,6 @@ lock = threading.Lock()
 messages = queue.Queue()
 users = []
 global talkto
-talkto_map = dict()
 
 
 def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
@@ -54,7 +53,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     print("Successfully logged in! as ", username)
                     client.send("ACCEPT".encode('ascii'))
                     clients[username] = client
-                    logins.add(username)
+                    #logins.add(username)
                     print("add " + username + " to logins")
                     global user
                     user = username
@@ -93,9 +92,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     client.send("MATCHED".encode('ascii'))
                     next_line = client.recv(1024).decode('ascii')
                     if next_line == "SENDMATCHED":
-                        lock.acquire()
                         lists = pickle.dumps(keys)
-                        lock.release()
                         client.send(lists)   
             elif operation.startswith("TALKTO"):
                 global talkto
@@ -105,19 +102,15 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     data = json.load(f)
                 if talkto in data:
                     client.send("VALTALKTO".encode('ascii'))
-                    talkto_map[user] = talkto
+                    logins.add(username)
                 else:
-                    print("this is a list of available users: ", list(data.keys()))
-                    lock.acquire()
                     lists = pickle.dumps(list(data.keys()))
-                    lock.release()
                     client.send(lists)
             elif operation == "STARTHIST":
                 # send the queued messages from talkto to user
                 lock.acquire()
-                with open("histories.json", "r") as f:
+                with open("histories.json", "r+") as f:
                     data = json.load(f)
-                    lock.release()
                     # from talkto to user
 
                     print(talkto, data.keys())
@@ -128,19 +121,20 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                             messages = data[talkto][user]
                             if not len(messages)==0:
                                 client.send("NOTEMPTY".encode('ascii'))
+                                print("After sending not empty", messages)
                                 tosend = pickle.dumps(messages)
                                 client.send(tosend)
                             
                             # after send all the queued messages, clear the history
                                 print("------clear the message--------")
                                 #data[talkto][user] = []lock.acquire()
-                                lock.acquire()
-                                with open("histories.json", "r") as f:
-                                    data = json.load(f)
+                                #lock.acquire()
+                                with open("histories.json", "r") as f2:
+                                    data = json.load(f2)
                                     data[talkto][user] = []
-                                with open("histories.json", 'w') as f:
-                                    json.dump(data, f, indent=4)
-                                lock.release()
+                                with open("histories.json", 'w') as f2:
+                                    json.dump(data, f2, indent=4)
+                                #lock.release()
                                 print("------finish clean--------")
    
                             else:
@@ -149,13 +143,8 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                                 client.send("EMPTY".encode('ascii'))
                     else:
                         client.send("EMPTY".encode('ascii'))
+                lock.release()
 
-            elif operation == "ASKTALKTOBACK":
-                if talkto not in talkto_map or talkto_map[talkto] != user:
-                    client.send("NOTALKTOBACK".encode('ascii'))
-                else:
-                    client.send("TALKTOBACK".encode('ascii'))
-                
             elif operation == "STARTCHAT":
                 # check if the person trying to talkto is online
                 # if online, start chat
@@ -206,10 +195,12 @@ def message_receiver(client, talkto, user):
                     logins.remove(user_itself)
                     if client:
                         client.close()
-                    break
-                #分发给use
-                # sender recver message 
-                #clients[user_talk_to].send((user_itself + ": "+user_message).encode('ascii')) 
+                    return
+
+                if user_message == "\switch":
+                    client.send("SWITCH".encode('ascii'))
+                    return
+
                 clients[user_talk_to].send(("CHATNOW" + user_itself + " : "+user_message).encode('ascii')) 
             else:
                 client.send("CHATLATER".encode('ascii'))
@@ -237,7 +228,7 @@ def message_receiver(client, talkto, user):
                 with open("histories.json", "r") as f:
                     data = json.load(f)
                     # from user to talkto
-                    print("now writing to json")
+                    print("now writing to json", user_message)
                     try:
                         old_list = data[user_itself][user_talk_to]
                         old_list.append(user_message)
