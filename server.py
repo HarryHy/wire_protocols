@@ -197,7 +197,7 @@ def message_receiver(client, talkto, user):
                 user_itself = recv_message.split("~")[2]
                 l1 = len(user_talk_to)
                 l2 = len(user_itself)
-                user_message = recv_message[l1 + l2 + 2:]
+                user_message = recv_message[7 + l1 + l2 + 2:]
                 if user_message == "\exit":
                     #user log out 
                     clients.pop(user_itself)
