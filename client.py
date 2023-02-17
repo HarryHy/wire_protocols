@@ -205,13 +205,15 @@ def start_conversation():
         global receive_thread
         receive_thread = threading.Thread(target=receive_messages)
         receive_thread.start()
-            
+    
+        
     except restart_conversation_exception:
         print('actually returned to start_conversation')
         write_thread.join()
         receive_thread.join()
         print("There are these number of threads running after restart" + threading.active_count())
         start_conversation()
+
     except Exception as e:
         print('Error Occurred: ', e)
         write_thread.join()
@@ -239,7 +241,7 @@ def write_messages():
             input_message = input()
             if input_message == "\exit":
                 chat_break = True
-                client.send(('EXIT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                client.send(('EXITTT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
                 print("end of exit")
                 return
             elif input_message == "\switch":
@@ -251,9 +253,12 @@ def write_messages():
                 # delete self account
                 client.send(('DELETE~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
                 # raise delete_account_exception("")
+                print("end of delete")
+                print("You are forced to log out")
+                return
             else:
                 print(username + " : " + input_message)
-                client.send(('CHAT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                client.send(('CHATTT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
     except restart_conversation_exception:
         #global receive_begin
         #receive_begin = False
@@ -324,8 +329,8 @@ def main():
         #recieve_thread = threading.Thread(target=start_conversation)
         #recieve_thread.start()
         # recieve_thread.join()
-        receive_thread.join()
-        write_thread.join()
+        #receive_thread.join()
+        #write_thread.join()
     except:
         if client:
             client.close()
