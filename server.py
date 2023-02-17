@@ -262,6 +262,7 @@ def message_receiver(client, talkto, user):
                     lock.release()
                     # tell the talkto
                     print("tell " + user_talk_to + " that " +user_itself + " is deleted")
+                    # This line will cause key not find error if clients doesn't have the key 'user_talk_to'
                     clients[user_talk_to].send("TALKTODELETED".encode('ascii'))
                     # confirm with the user that he's deleted
                     client.send("CONFIRMDELETED".encode("ascii"))
