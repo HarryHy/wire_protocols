@@ -12,14 +12,15 @@ import sys
 lock = threading.Lock()
 messages = queue.Queue()
 users = []
-global talkto
 
 
 def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
-    talkto = ""
+    
     # connect with the client
     # client, addr = server.accept()
     print(f"Connected with {str(addr)}")
+    username = ""
+    talkto = ""
     try:
         while True:
             
@@ -56,8 +57,8 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     clients[username] = client
                     #logins.add(username)
                     print("add " + username + " to logins")
-                    global user
-                    user = username
+                    # global user
+                    # user = username
                     #continue
                 #TODO
             elif operation.startswith("SIGNUP"):
@@ -115,10 +116,10 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
 
                     print(talkto, data.keys())
                     if talkto in data.keys():
-                        print(user, data[talkto].keys())
-                        if user in data[talkto].keys():
+                        print(username, data[talkto].keys())
+                        if username in data[talkto].keys():
                             # maybe data[talkto][user] will return a key not find error
-                            messages = data[talkto][user]
+                            messages = data[talkto][username]
                             if not len(messages)==0:
                                 client.send("NOTEMPTY".encode('ascii'))
                                 print("After sending not empty", messages)
@@ -131,7 +132,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                                 #lock.acquire()
                                 with open("histories.json", "r") as f2:
                                     data = json.load(f2)
-                                    data[talkto][user] = []
+                                    data[talkto][username] = []
                                 with open("histories.json", 'w') as f2:
                                     json.dump(data, f2, indent=4)
                                 #lock.release()
@@ -155,7 +156,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                 else:
                     client.send("CHATLATER".encode('ascii'))
                 '''
-                message_receiver(client, talkto, user)
+                message_receiver(client, talkto, username)
                 #if the user want to start over, the chattiing part is wrapped in the receive.
                 print("server chat breaking")
 
