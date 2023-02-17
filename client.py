@@ -155,17 +155,28 @@ def choose_talkto():
         global talkto
         talkto = input("Who do you want to talk to? (specify the username) ")
         client.send(("TALKTO "+talkto).encode('ascii'))
-        next_message = client.recv(1024)
-        try :
-            next_message.decode('ascii')
+        # next_message = client.recv(1024)
+        # try :
+        #     next_message.decode('ascii')
+        #     print("next_message is " + next_message)
+        #     print("Start your conversation with "+talkto + "!")
+        #     choose_talk_to_stop = True
+        #     break
+        # except:
+        #     print("The username you were trying to talk to doesn't exist, please try another one. The available users are: \n")
+        #     list_accounts = pickle.loads(next_message)
+        #     for a in list_accounts:
+        #         print(a)
+        next_message = client.recv(1024).decode('ascii')
+        if next_message == "VALTALKTO":
+            print("next_message is " + next_message)
             print("Start your conversation with "+talkto + "!")
             choose_talk_to_stop = True
             break
-        except:
-            print("The username you were trying to talk to doesn't exist, please try another one. The available users are: \n")
-            list_accounts = pickle.loads(next_message)
-            for a in list_accounts:
-                print(a)
+        elif next_message == "INVALTALKTO":
+            print("The username you were trying to talk to doesn't exist, please try another one.")
+        else: 
+            print("invalid response of choose_talkto" + next_message)
 
 global receive_begin 
 receive_begin = True
@@ -188,20 +199,31 @@ def start_conversation():
     # after receive the history, start to chat
     client.send('STARTCHAT'.encode('ascii'))
     try:
+        global write_thread
         write_thread = threading.Thread(target=write_messages)
         write_thread.start()
-        recieve_thread = threading.Thread(target=receive_messages)
-        recieve_thread.start()
+        global receive_thread
+        receive_thread = threading.Thread(target=receive_messages)
+        receive_thread.start()
             
-
+    except restart_conversation_exception:
+        print('actually returned to start_conversation')
+        write_thread.join()
+        receive_thread.join()
+        print("There are these number of threads running after restart" + threading.active_count())
+        start_conversation()
     except Exception as e:
         print('Error Occurred: ', e)
         write_thread.join()
-        recieve_thread.join()
+        receive_thread.join()
         if client:
             client.close()
 
 class restart_conversation_exception(Exception):
+    def __init__(self, message):
+        print(message)
+
+class delete_account_exception(Exception):
     def __init__(self, message):
         print(message)
 
@@ -225,6 +247,10 @@ def write_messages():
                 client.send(('SWITCH~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
                 print("end of switch")
                 raise restart_conversation_exception("restart")
+            elif input_message == "\delete":
+                # delete self account
+                client.send(('DELETE~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
+                # raise delete_account_exception("")
             else:
                 print(username + " : " + input_message)
                 client.send(('CHAT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
@@ -233,7 +259,8 @@ def write_messages():
         #receive_begin = False
         
         start_conversation()
-        return
+    # except delete_account_exception:
+    #     return delete_account_exception("bye bye~")
     except Exception as e:
         print('Error Occurred: ', e)
         #client.close()
@@ -262,6 +289,19 @@ def receive_messages():
                 global restart
                 restart = True
                 return    
+            elif message.startswith("CONFIRMDELETED"):
+                raise delete_account_exception("")
+            elif message.startswith("TALKTODELETED"):
+                print("the other user deleted its account, choose another user to talk to (i.e. type '\switch')")
+                # raise restart_conversation_exception("restart")
+
+        # except restart_conversation_exception:
+        #     return restart_conversation_exception("return to start_conversation")
+        #     # return
+
+        except delete_account_exception:
+            return delete_account_exception("bye bye~")
+
         except Exception as e:
             print('Error Occurred: ', e)
             #client.close()
@@ -284,6 +324,8 @@ def main():
         #recieve_thread = threading.Thread(target=start_conversation)
         #recieve_thread.start()
         # recieve_thread.join()
+        receive_thread.join()
+        write_thread.join()
     except:
         if client:
             client.close()

@@ -102,11 +102,13 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                 with open('accounts.json') as f:
                     data = json.load(f)
                 if talkto in data:
+                    print(talkto + " is a valid user")
                     client.send("VALTALKTO".encode('ascii'))
                     logins.add(username)
                 else:
-                    lists = pickle.dumps(list(data.keys()))
-                    client.send(lists)
+                    client.send("INVALTALKTO".encode('ascii'))
+                    # lists = pickle.dumps(list(data.keys()))
+                    # client.send(lists)
             elif operation == "STARTHIST":
                 # send the queued messages from talkto to user
                 lock.acquire()
@@ -171,12 +173,16 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                 if client:
                     client.close()
                 break
+
     except Exception as e:
         print("client error")
         print(e)
         if client:
             client.close()
 
+class delete_account_exception(Exception):
+    def __init__(self, message):
+        print(message)
 
 def message_receiver(client, talkto, user):
     # A function handling the chatting part
@@ -197,10 +203,33 @@ def message_receiver(client, talkto, user):
                     if client:
                         client.close()
                     return
+                    # TODO Do we need to close the client when exit???
 
                 if user_message == "\switch":
                     client.send("SWITCH".encode('ascii'))
                     return
+
+                if user_message == "\delete":
+                    print(user_itself + " deleted its account")
+                    # delete from json
+                    lock.acquire()
+                    with open("accounts.json") as f:
+                        data = json.load(f)
+                        data.pop(user_itself)
+                    with open("accounts.json", "w") as f:
+                        print("deleting from json")
+                        json.dump(data, f, indent=4)
+                    lock.release()
+                    # tell the talkto
+                    print("tell " + user_talk_to + " that " +user_itself + " is deleted")
+                    clients[user_talk_to].send("TALKTODELETED".encode('ascii'))
+                    # confirm with the user that he's deleted
+                    client.send("CONFIRMDELETED".encode("ascii"))
+                    #user log out 
+                    clients.pop(user_itself)
+                    logins.remove(user_itself)
+                    raise delete_account_exception("deleted")
+
 
                 clients[user_talk_to].send(("CHATNOW" + user_itself + " : "+user_message).encode('ascii')) 
             else:
@@ -219,6 +248,27 @@ def message_receiver(client, talkto, user):
                 if user_message == "\switch":
                     client.send("SWITCH".encode('ascii'))
                     return
+
+                if user_message == "\delete":
+                    print(user_itself + " deleted its account")
+                    # delete from json
+                    lock.acquire()
+                    with open("accounts.json") as f:
+                        data = json.load(f)
+                        data.pop(user_itself)
+                    with open("accounts.json", "w") as f:
+                        print("deleting from json")
+                        json.dump(data, f, indent=4)
+                    lock.release()
+                    # tell the talkto
+                    print("tell " + user_talk_to + " that " +user_itself + " is deleted")
+                    clients[user_talk_to].send("TALKTODELETED".encode('ascii'))
+                    # confirm with the user that he's deleted
+                    client.send("CONFIRMDELETED".encode("ascii"))
+                    #user log out 
+                    clients.pop(user_itself)
+                    logins.remove(user_itself)
+                    raise delete_account_exception("deleted")
 
 
                 #write to the json file 
@@ -240,6 +290,7 @@ def message_receiver(client, talkto, user):
                         old_list = []
                         old_list.append(user_message)
                         try :
+                            print("in try data[user_itself][user_talk_to] = old_list")
                             data[user_itself][user_talk_to] = old_list
                         except:
                             # data[user_itself] not exists
@@ -253,8 +304,13 @@ def message_receiver(client, talkto, user):
                     json.dump(data, f, indent=4)
                 lock.release()
 
-    except:
+    except delete_account_exception:
+        return delete_account_exception("deleted")
+
+    except Exception as e:
         #This user try to logout or encounter connection error
+        print("exception raised in message_receiver")
+        print(e)
         clients.pop(user)
         logins.remove(user)
         if client:

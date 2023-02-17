@@ -6,43 +6,10 @@
         "password": "262",
         "id": "3"
     },
-    "sally": {
-        "password": "123"
-    },
-    "carmen": {
-        "password": "131"
-    },
-    "lily": {
-        "password": "167"
-    },
-    "sophy": {
-        "password": "456"
-    },
     "nancy": {
         "password": "678"
     },
-    "eva": {
-        "password": "890"
-    },
-    "kloe": {
-        "password": "145"
-    },
-    "kim": {
-        "password": "145"
-    },
     "phoebe": {
         "password": "123"
-    },
-    "viki": {
-        "password": "1604"
-    },
-    "leila": {
-        "password": "666"
-    },
-    "haha": {
-        "password": "hahaha"
-    },
-    "hahaha": {
-        "password": "haha"
     }
 }
