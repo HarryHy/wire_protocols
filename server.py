@@ -202,16 +202,13 @@ def message_receiver(client, talkto, user):
                     #user log out 
                     clients.pop(user_itself)
                     logins.remove(user_itself)
-                    if client:
-                        client.close()
-                    return
                     # TODO Do we need to close the client when exit???
 
-                if user_message == "\switch":
+                elif user_message == "\switch":
                     client.send("SWITCH".encode('ascii'))
                     return
 
-                if user_message == "\delete":
+                elif user_message == "\delete":
                     print(user_itself + " deleted its account")
                     # delete from json
                     lock.acquire()
@@ -232,8 +229,8 @@ def message_receiver(client, talkto, user):
                     logins.remove(user_itself)
                     raise delete_account_exception("deleted")
 
-
-                clients[user_talk_to].send(("CHATNOW" + user_itself + " : "+user_message).encode('ascii')) 
+                else:
+                    clients[user_talk_to].send(("CHATNOW" + user_itself + " : "+user_message).encode('ascii')) 
             else:
                 client.send("CHATLATER".encode('ascii'))
                 recv_message = client.recv(1024).decode('ascii')
