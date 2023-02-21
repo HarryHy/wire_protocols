@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+service ChatService {
+  rpc SignUp(UserCredentials) returns (SignUpResponse) {}
+  rpc SignIn(UserCredentials) returns (SignInResponse) {}
+  rpc ListUsers(UserQuery) returns (stream User) {}
+  rpc SignOut(UserCredentials) returns (SignOutResponse) {}
+  rpc SendMessage(Message) returns (SendMessageResponse) {}
+  rpc ReceiveMessage(MessageQuery) returns (stream Message) {}
+  rpc DeleteAccount(UserCredentials) returns (DeleteAccountResponse) {}
+}
+
+message UserCredentials {
+  string user_id = 1;
+  string password = 2;
+}
+
+message UserQuery {
+  string query = 1;
+}
+
+message User {
+  string user_id = 1;
+}
+
+message Message {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string text = 3;
+  string password = 4;
+}
+
+message MessageQuery {
+  string user_id = 1;
+}
+
+message SendMessageResponse {
+  bool delivered = 1;
+  string error_message = 2;
+
+}
+
+message DeleteAccountResponse {
+  bool success = 1;
+  string error_message = 2;
+
+}
+
+message SignInResponse {
+  bool success = 1;
+  string error_message = 2;
+
+}
+
+message SignUpResponse {
+  bool success = 1;
+  string error_message = 2;
+
+}
+
+message SignOutResponse {
+  bool success = 1;
+  string error_message = 2;
+  
+}
+
+message Empty{
+
+}
+
