@@ -95,7 +95,7 @@ class TestChatServer(unittest.TestCase):
         user_id_2 = "adam"
         request = chat_pb2.UserCredentials(
             user_id=user_id_2, password=password)
-        self.server.SignUp(request, self.context)
+        self.server.SignIn(request, self.context)
         request = chat_pb2.UserCredentials(user_id=user_id, password=password)
         self.server.SignIn(request, self.context)
         request = chat_pb2.Message(
