@@ -56,10 +56,8 @@ def signup():
         try:
             username = input("Create your username: ")
             # send the username to server for duplicate check
-            print("signup 1")
             client.send(('SIGNUP '+username).encode('ascii'))
             dup_message = client.recv(1024).decode('ascii')
-            print("signup 2")
             if dup_message == "DUPNAME":
                 print("Username already exists! Change to another one.")
             elif dup_message == "NONDUPNAME":
@@ -115,7 +113,6 @@ def receive():
     """
     Receive messages from the server.
     """
-    print("in receive")
     try:
         while True:
             global stop
@@ -136,7 +133,6 @@ def receive():
                         print("No such user")
                         stop = True
                     else:
-                        #print(s)
                         print("Successfully logged in as ", username)
                         return
             elif message == "FAIL":
@@ -144,7 +140,6 @@ def receive():
             else: 
                 print(" the message is not on the list")
                 print(message)
-        print("out of while loop")
     except Exception as e:
         print('Error Occurred: ', e)
         if client:
@@ -204,7 +199,6 @@ def start_conversation():
     If there are any queued messages, it receives them and displays them. 
     Then, it sends a message to the server to start the chat, and starts two threads to handle writing and receiving messages.
     """
-    #os.system('cls||clear')
     choose_talkto()
     client.send('STARTHIST'.encode('ascii'))
     print("finish client.send('STARTHIST'.encode('ascii'))")
@@ -286,15 +280,13 @@ def write_messages():
                 print(username + " : " + input_message)
                 client.send(('CHATTT~' + talkto +"~" + username + "~"+ input_message).encode('ascii'))
     except restart_conversation_exception:
-        #global receive_begin
-        #receive_begin = False
+
         
         start_conversation()
-    # except delete_account_exception:
-    #     return delete_account_exception("bye bye~")
+        
     except Exception as e:
         print('Error Occurred: ', e)
-        #client.close()
+
 
 def receive_messages():
     """
@@ -327,21 +319,12 @@ def receive_messages():
                 raise delete_account_exception("")
             elif message.startswith("TALKTODELETED"):
                 print("the other user deleted its account, choose another user to talk to (i.e. type '\switch')")
-                # raise restart_conversation_exception("restart")
-
-        # except restart_conversation_exception:
-        #     return restart_conversation_exception("return to start_conversation")
-        #     # return
 
         except delete_account_exception:
             return delete_account_exception("bye bye~")
 
         except Exception as e:
             print('Error Occurred: ', e)
-            #client.close()
-
-
-
 
 
 
@@ -353,13 +336,9 @@ def main():
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # connect to the host
         client.connect((host, port))
-        choose_operations()  # finished login here
+        # finished login here
+        choose_operations()  
         start_conversation()
-        #recieve_thread = threading.Thread(target=start_conversation)
-        #recieve_thread.start()
-        # recieve_thread.join()
-        #receive_thread.join()
-        #write_thread.join()
     except:
         if client:
             client.close()
@@ -373,8 +352,6 @@ if __name__ == '__main__':
     args = parse.parse_args()
     global host
     global port
-    #host = input("Enter the host: ")
-    #port = input("Enter the port: ")
 
     host = args.host
     port = args.port
