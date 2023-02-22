@@ -117,7 +117,7 @@ def receive():
         while True:
             global stop
             if stop: break
-            print("in loop")
+            print("in the checking username step")
         
             message = client.recv(1024).decode('ascii')
             if message == "USERNAME":
