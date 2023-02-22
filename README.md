@@ -36,19 +36,22 @@ Replace user_host and user_port with the host and port of the server you want to
 
 ## Login
 - If you haven't created an account yet, choose option (2) to create a new account.
+- If the account username existed in the list of accounts, an error message will occur.
 - If you already have an account, choose option (1) to sign in. You will be asked to enter your username and password. If the password matches the username, the login will be successful.
 - If you want to see a list of existing accounts, choose option (3) to have a full list of usernames, or use wildcard to have a filtered list.
 
 ## Choose the user to talk to
-- After login, the terminal will ask you to choose a user to talk to. Input the correct username of the person and start your chat
-- Once talkto is chosen, the history of the previous messages will be displayed first, and then you can start typing your messages.
+- After the login step, the terminal will ask you to choose a user to talk to. Input the correct username of the person and start your chat
+- Once the talkto user is chosen, the history of the previous messages will be displayed first, and then you can start typing your messages.
 
 ## Switch user to talk to
-- If you want to switch to another user while chatting, simply type `\switch` and return to the choose talkto page
+- If you want to switch to another user while chatting, simply type `\switch` and return to the choose talkto user page. 
 
+## Quit the chatroom
+- If you want to delete your account, simply type `\exit` during the chat. 
+- 
 ## Delete your account
 - If you want to delete your account, simply type `\delete` during the chat.
-
 
 
 ## To test the chat box:
