@@ -5,7 +5,7 @@
 We used Python 3.9+ to develop this program. Please use pip to install all the dependencies. Create a virtual environment, then run:
 
 ```
-pip install -r requirements.txt
+pip install -r requirement.txt
 ```
 ## Deployment 
 
