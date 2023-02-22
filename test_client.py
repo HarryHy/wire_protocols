@@ -1,58 +1,175 @@
-import pytest
-from unittest.mock import patch, Mock
-from client import *
+import unittest
+import socket
+from unittest import mock
+from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
+from c2 import ChatClient
+import pickle
+import threading
+from io import StringIO
 
-def test_login():
-    with patch('socket.socket') as mock_socket:
-        # Create a mock socket object
-        mock_client = Mock()
-        mock_socket.return_value = mock_client
 
-        # Call the login function
-        login()
+class TestChatClient(unittest.TestCase):
+    # def setUp(self):
+    #     self.client = ChatClient("localhost", 56789)
 
-        # Assert that the correct message was sent to the server
-        mock_client.send.assert_called_once_with('LOGIN'.encode('ascii'))
+    def test_init(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient("localhost", 56789)
+            self.assertEqual(client.server_host, "localhost")
+            self.assertEqual(client.server_port, 56789)
+            self.assertEqual(client.client, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+            client.client.connect.assert_called_once_with(("localhost", 56789))
 
-        # Assert that the username and password were entered correctly
-        # assert username == "example"
-        # assert password == "123"
+    def test_send_message(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient("localhost", 12345)
+            client.username = "alice"
+            client.send("hello")
+            client.client.send.assert_called_once_with("hello")
 
-# def test_signup():
-#     with patch('socket.socket') as mock_socket:
-#         # Create a mock socket object
-#         mock_client = Mock()
-#         mock_socket.return_value = mock_client
+    def test_close(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient("localhost", 12345)
+            client.username = "alice"
+            client.close()
+            client.client.close.assert_called_once()
+    
+    def test_login_with_valid_credentials(self):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = Mock(side_effect=[
+                'USERNAME'.encode('ascii'),
+                'PASSWORD'.encode('ascii'),
+                'OK'.encode('ascii')
+            ])
+            
+            # Act
+            result = client.login('testuser', 'testpassword')
+            
+            # Assert
+            self.assertEqual(result, 0)
+            self.assertEqual(client.username, 'testuser')
 
-#         # Set the response from the server
-#         mock_client.recv.return_value.decode.return_value = "NONDUPNAME"
+    def test_login_with_invalid_username(self):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = Mock(side_effect=[
+                'USERNAME'.encode('ascii'),
+                'PASSWORD'.encode('ascii'),
+                'NOUSER'.encode('ascii')
+            ])
+            
+            # Act
+            result = client.login('testuser', 'testpassword')
+            
+            # Assert
+            self.assertEqual(result, 1)
+            self.assertIsNone(client.username)
 
-#         # Call the signup function
-#         signup()
+    def test_login_with_invalid_password(self):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = Mock(side_effect=[
+                'USERNAME'.encode('ascii'),
+                'PASSWORD'.encode('ascii'),
+                'REJECT'.encode('ascii')
+            ])
+            
+            # Act
+            result = client.login('testuser', 'testpassword')
+            
+            # Assert
+            self.assertEqual(result, 1)
+            self.assertIsNone(client.username)
 
-#         # Assert that the correct message was sent to the server
-#         mock_client.send.assert_called_once_with('SIGNUP example'.encode('ascii'))
+    def test_list_account_option1(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.list_option1()
+            client.client.send.assert_called_once_with(b"LIST ALL")
 
-#         # Assert that the username and password were entered correctly
-#         # assert username == "example"
-#         # assert password == "test"
+    def test_list_account_option2(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.list_option2("xin*")
+            client.client.send.assert_called_once_with(b"LIST xin*")
 
-def test_listAccounts():
-    with patch('socket.socket') as mock_socket:
-        # Create a mock socket object
-        mock_client = Mock()
-        mock_socket.return_value = mock_client
+    def dump(self, client):
+        while True:
+                client.client.recv = Mock(side_effect=[
+                pickle.dumps(['user1', 'user2', 'user3'])
+            ])
 
-        # Set the response from the server
-        mock_client.recv.return_value.decode.return_value = "MATCHED"
-        mock_client.recv.return_value = pickle.dumps(["account1", "account2"])
+    def test_receive_from_list_account_matched(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            dump_thread = threading.Thread(target=self.dump, args=(client,))
+            dump_thread.start()
+            
+            result = client.receive_from_listAccounts("MATCHED")
+            self.assertEqual(result, 1)
+            client.client.send.assert_called_once_with(b"SENDMATCHED")
+            
 
-        # Call the listAccounts function
-        listAccounts()
+    def test_receive_from_list_account_nomatched(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            # dump_thread = threading.Thread(target=self.dump, args=(client,))
+            # dump_thread.start()
+            with patch('sys.stdout', new = StringIO()) as fake_out:
+                result = client.receive_from_listAccounts("NOMATCHED")
+                self.assertEqual(result, 1)
+                self.assertEqual(fake_out.getvalue(), "No matched account found\n")
+                
+    @mock.patch('builtins.input', side_effect=['testusername', 'testpassword'])
+    def test_signup_with_new_username(self, mock_input):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = mock.Mock(side_effect=[
+                'SIGNUP testusername'.encode('ascii'),
+                'NONDUPNAME'.encode('ascii')
+            ])
 
-        # Assert that the correct message was sent to the server
-        mock_client.send.assert_called_once_with('LIST ALL'.encode('ascii'))
+            # Act
+            result = client.signup('testusername', 'testpassword')
 
-        # Assert that the output was printed correctly
-        # assert "account1" in capsys.readouterr().out
-        # assert "account2" in capsys.readouterr().out
+            # Assert
+            self.assertEqual(result, 0)
+
+    @mock.patch('builtins.input', side_effect=['testusername', 'testpassword'])
+    def test_signup_with_existing_username(self, mock_input):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = mock.Mock(side_effect=[
+                'SIGNUP testusername'.encode('ascii'),
+                'DUPNAME'.encode('ascii')
+            ])
+
+            # Act
+            result = client.signup('testusername', 'testpassword')
+
+            # Assert
+            self.assertEqual(result, 1)
+
+if __name__ == "__main__":
+    #mock_socket = mock.Mock()
+    test = TestChatClient()
+    test.test_init()
+    test.test_send_message()
+    test.test_close()
+    test.test_login_with_valid_credentials()
+    test.test_login_with_invalid_username()
+    test.test_login_with_invalid_password()
+    test.test_list_account_option1()
+    test.test_list_account_option2()
+    test.test_receive_from_list_account_nomatched()
+    test.test_receive_from_list_account_matched()
+    test.test_signup_with_existing_username()
+    test.test_signup_with_new_username()
+    
