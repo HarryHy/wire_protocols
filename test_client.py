@@ -1,55 +1,95 @@
-import subprocess
+import unittest
 import socket
-import time
+from unittest import mock
+from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
+from c2 import ChatClient
 
-# def start_server():
-#     # Start the server script in a subprocess
-#     server_process = subprocess.Popen(['python', 'server.py'])
-#     # Wait for the server to start up
-#     time.sleep(1)
-#     return server_process
 
-# def start_client():
-#     # Start the client script in a subprocess
-#     client_process = subprocess.Popen(['python', 'client.py', '-u', '127.0.0.1', '-p', '5555'])
-#     # Wait for the client to start up
-#     time.sleep(1)
-#     return client_process
+class TestChatClient(unittest.TestCase):
+    # def setUp(self):
+    #     self.client = ChatClient("localhost", 56789)
 
-# def stop_server(server_process):
-#     # Stop the server subprocess
-#     server_process.terminate()
-#     server_process.wait()
+    def test_init(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient("localhost", 56789)
+            self.assertEqual(client.server_host, "localhost")
+            self.assertEqual(client.server_port, 56789)
+            self.assertEqual(client.client, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+            client.client.connect.assert_called_once_with(("localhost", 56789))
 
-# def stop_client(client_process):
-#     # Stop the client subprocess
-#     client_process.terminate()
-#     client_process.wait()
+    def test_send_message(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient("localhost", 12345)
+            client.username = "alice"
+            client.send("hello")
+            client.client.send.assert_called_once_with("hello")
 
-def test_wire_protocol():
-    # Start the server and client subprocesses
-    # server_process = start_server()
-    # client_process = start_client()
-
-    # Connect to the server
-    # Receive the test message on the server
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('127.0.0.1', 5555))
-    server_socket.listen(1)
-    server_conn, server_addr = server_socket.accept()
-
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('127.0.0.1', 5555))
-
-    # Send a test message from the client to the server
-    client_socket.send(b'TEST MESSAGE')
-
+    def test_close(self):
+        with mock.patch('socket.socket'):
+            client = ChatClient("localhost", 12345)
+            client.username = "alice"
+            client.close()
+            client.client.close.assert_called_once()
     
-    
-#    # Check that the received message matches the sent message
-#     message = server_conn.recv(1024)
-#     assert message == b'TEST MESSAGE' 
+    def test_login_with_valid_credentials(self):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = Mock(side_effect=[
+                'USERNAME'.encode('ascii'),
+                'PASSWORD'.encode('ascii'),
+                'OK'.encode('ascii')
+            ])
+            
+            # Act
+            result = client.login('testuser', 'testpassword')
+            
+            # Assert
+            self.assertEqual(result, 0)
+            self.assertEqual(client.username, 'testuser')
 
-    # # Stop the server and client subprocesses
-    # stop_server(server_process)
-    # stop_client(client_process)
+    def test_login_with_invalid_username(self):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = Mock(side_effect=[
+                'USERNAME'.encode('ascii'),
+                'PASSWORD'.encode('ascii'),
+                'NOUSER'.encode('ascii')
+            ])
+            
+            # Act
+            result = client.login('testuser', 'testpassword')
+            
+            # Assert
+            self.assertEqual(result, 1)
+            self.assertIsNone(client.username)
+
+    def test_login_with_invalid_password(self):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = Mock(side_effect=[
+                'USERNAME'.encode('ascii'),
+                'PASSWORD'.encode('ascii'),
+                'REJECT'.encode('ascii')
+            ])
+            
+            # Act
+            result = client.login('testuser', 'testpassword')
+            
+            # Assert
+            self.assertEqual(result, 1)
+            self.assertIsNone(client.username)
+        
+
+if __name__ == "__main__":
+    #mock_socket = mock.Mock()
+    test = TestChatClient()
+    test.test_init()
+    test.test_send_message()
+    test.test_close()
+    test.test_login_with_valid_credentials()
+    test.test_login_with_invalid_username()
+    test.test_login_with_invalid_password()
