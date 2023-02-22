@@ -67,11 +67,8 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     print("Successfully logged in! as ", username)
                     client.send("ACCEPT".encode('ascii'))
                     clients[username] = client
-                    #logins.add(username)
                     print("add " + username + " to logins")
-                    # global user
-                    # user = username
-                    #continue
+
             
             # If the request is a "SIGNUP" request, it checks if the requested username is already taken. 
             # If the username is available, it prompts the user to enter a password, generates a unique ID for the new account, and stores the account information in a JSON file.
@@ -137,15 +134,13 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     data = json.load(f)
                     # from talkto to user
 
-                    print(talkto, data.keys())
                     if talkto in data.keys():
-                        print(username, data[talkto].keys())
+
                         if username in data[talkto].keys():
                             # maybe data[talkto][user] will return a key not find error
                             messages = data[talkto][username]
                             if not len(messages)==0:
                                 client.send("NOTEMPTY".encode('ascii'))
-                                print("After sending not empty", messages)
                                 tosend = pickle.dumps(messages)
                                 client.send(tosend)
                             
@@ -300,8 +295,6 @@ def message_receiver(client, talkto, user):
 
 
                 #write to the json file 
-                #收到消息
-                #分发给 json file
                 print("the user is not logged in")
                 lock.acquire()
                 with open("histories.json", "r+") as f:
@@ -371,14 +364,11 @@ if __name__ == '__main__':
             #print(f"Connected with {str(addr)}")    
             t = threading.Thread(target=receive, args=(client, addr))
             t.start()
-            # t.join()
-            #receive(client, addr)
+
         
         #stop the server from break
         #server.close()     
     except Exception as e:
         print('Error Occurred: ', e)
-        print("stop the thread")
-        t.join()
         print("stop the server")
         server.close()
