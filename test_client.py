@@ -1,55 +1,58 @@
-import subprocess
-import socket
-import time
+import pytest
+from unittest.mock import patch, Mock
+from client import *
 
-# def start_server():
-#     # Start the server script in a subprocess
-#     server_process = subprocess.Popen(['python', 'server.py'])
-#     # Wait for the server to start up
-#     time.sleep(1)
-#     return server_process
+def test_login():
+    with patch('socket.socket') as mock_socket:
+        # Create a mock socket object
+        mock_client = Mock()
+        mock_socket.return_value = mock_client
 
-# def start_client():
-#     # Start the client script in a subprocess
-#     client_process = subprocess.Popen(['python', 'client.py', '-u', '127.0.0.1', '-p', '5555'])
-#     # Wait for the client to start up
-#     time.sleep(1)
-#     return client_process
+        # Call the login function
+        login()
 
-# def stop_server(server_process):
-#     # Stop the server subprocess
-#     server_process.terminate()
-#     server_process.wait()
+        # Assert that the correct message was sent to the server
+        mock_client.send.assert_called_once_with('LOGIN'.encode('ascii'))
 
-# def stop_client(client_process):
-#     # Stop the client subprocess
-#     client_process.terminate()
-#     client_process.wait()
+        # Assert that the username and password were entered correctly
+        # assert username == "example"
+        # assert password == "123"
 
-def test_wire_protocol():
-    # Start the server and client subprocesses
-    # server_process = start_server()
-    # client_process = start_client()
+# def test_signup():
+#     with patch('socket.socket') as mock_socket:
+#         # Create a mock socket object
+#         mock_client = Mock()
+#         mock_socket.return_value = mock_client
 
-    # Connect to the server
-    # Receive the test message on the server
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('127.0.0.1', 5555))
-    server_socket.listen(1)
-    server_conn, server_addr = server_socket.accept()
+#         # Set the response from the server
+#         mock_client.recv.return_value.decode.return_value = "NONDUPNAME"
 
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('127.0.0.1', 5555))
+#         # Call the signup function
+#         signup()
 
-    # Send a test message from the client to the server
-    client_socket.send(b'TEST MESSAGE')
+#         # Assert that the correct message was sent to the server
+#         mock_client.send.assert_called_once_with('SIGNUP example'.encode('ascii'))
 
-    
-    
-#    # Check that the received message matches the sent message
-#     message = server_conn.recv(1024)
-#     assert message == b'TEST MESSAGE' 
+#         # Assert that the username and password were entered correctly
+#         # assert username == "example"
+#         # assert password == "test"
 
-    # # Stop the server and client subprocesses
-    # stop_server(server_process)
-    # stop_client(client_process)
+def test_listAccounts():
+    with patch('socket.socket') as mock_socket:
+        # Create a mock socket object
+        mock_client = Mock()
+        mock_socket.return_value = mock_client
+
+        # Set the response from the server
+        mock_client.recv.return_value.decode.return_value = "MATCHED"
+        mock_client.recv.return_value = pickle.dumps(["account1", "account2"])
+
+        # Call the listAccounts function
+        listAccounts()
+
+        # Assert that the correct message was sent to the server
+        mock_client.send.assert_called_once_with('LIST ALL'.encode('ascii'))
+
+        # Assert that the output was printed correctly
+        # assert "account1" in capsys.readouterr().out
+        # assert "account2" in capsys.readouterr().out
