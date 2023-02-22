@@ -28,7 +28,7 @@ For returning users, choose 2 for sign in and enter username and password. If th
 After log in, you will be given a set of options. Choose 1 to list users. Use * to list all users or you can use * as a wildcard such as a* or *a to list users that start with a or end with a. 
 
 ## Send Message
-You can choose 2 to send message to recipient. If the recipient is not found in the system, it will print out an error message. If the recipient is not logged in at this moment, the program will queue this message and deliver it when the recipient logs in and request it. 
+You can choose 2 to send message to recipient. If the recipient is not found in the system, it will print out an error message. If the recipient is not logged in at this moment, the program will queue this message and deliver it when the recipient logs in and requests it. 
 
 ## Receive Message
 You can choose 3 to receive message sent to you. 
