@@ -48,8 +48,9 @@ Replace user_host and user_port with the host and port of the server you want to
 - If you want to switch to another user while chatting, simply type `\switch` and return to the choose talkto user page. 
 
 ## Quit the chatroom
-- If you want to delete your account, simply type `\exit` during the chat. 
-- 
+- If you want to Quit this chatroom and close your account, simply type `\exit` during the chat. 
+- You can also use keyboard interrupt to quit this program. This will not close the server. 
+
 ## Delete your account
 - If you want to delete your account, simply type `\delete` during the chat.
 
