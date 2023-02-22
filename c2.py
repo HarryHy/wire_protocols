@@ -108,6 +108,27 @@ class ChatClient:
 
             except Exception as e:
                 print('Error Occurred: ', e)
+
+    def list_option1(self):
+        self.client.send('LIST ALL'.encode('ascii'))
+
+    def list_option2(self, pattern):
+        self.client.send(('LIST '+pattern).encode('ascii'))
+
+    def receive_from_listAccounts(self, response):
+        
+        if response == "NOMATCHED":
+            print("No matched account found")
+        elif response == "MATCHED":
+            self.client.send("SENDMATCHED".encode('ascii'))
+            # Receive list of matched accounts from server
+            list_bytes = self.client.recv(4096)
+            list_accounts = pickle.loads(list_bytes)
+            # Print each account in the list
+            for a in list_accounts:
+                print(a)
+        return 1
+
     
     def listAccounts(self):
         """
@@ -124,28 +145,19 @@ class ChatClient:
             # Ask the user whether to list all accounts or by wildcard
             option = input("(1)List all \n(2)List by wildcard\n")
             if option == "1":
-                self.client.send('LIST ALL'.encode('ascii'))
+                self.list_option1()
+                # self.client.send('LIST ALL'.encode('ascii'))
                 break
             elif option == "2":
                 # Ask the user to input the search pattern
                 pattern = input("Input your search pattern: ")
-                self.client.send(('LIST '+pattern).encode('ascii'))
+                # self.client.send(('LIST '+pattern).encode('ascii'))
+                self.list_option2(pattern)
                 break
             else: 
                 print("Invalid option, choose again")
-        
         response = self.client.recv(1024).decode('ascii')
-        if response == "NOMATCHED":
-            print("No matched account found")
-        elif response == "MATCHED":
-            self.client.send("SENDMATCHED".encode('ascii'))
-            # Receive list of matched accounts from server
-            list_bytes = self.client.recv(4096)
-            list_accounts = pickle.loads(list_bytes)
-            # Print each account in the list
-            for a in list_accounts:
-                print(a)
-        return 1
+        self.receive_from_listAccounts(response)
 
 def choose_operations(client):
     """
