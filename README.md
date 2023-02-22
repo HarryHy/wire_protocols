@@ -43,14 +43,9 @@ You can choose 5 to sign out or 6 to exit the program.
 Sometimes when you close the server and want to restart the server and client. The client will raise an error of failed to connect to all address. 
 You can solve this connection issue by close VScode or any IDE you use and start the server and client again. 
 
-## GRPC vs Naive Implementation
-GRPC buffer size: Max 4MB 
-
-Areas to cover:
-- Packet size
-- Code simplicity
-- Focus on designing the most optimized wire protocol possible
-    - Design experience with sending strings over the wire protocol
+## GRPC vs Our Implementation
+Our implementation uses a low-level networking technology that allow applications to send and receive raw data over a network connection. gRPC is a high-level framework that is built on top of HTTP/2 and uses Protocol Buffers to encode and decode data.
+GRPC buffer size: Max 4MB. GRPC is faster than our implementation since it uses binary encoding and compression, as well as multiplexing over a single connection. 
 
 
 
