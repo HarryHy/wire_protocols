@@ -1,120 +1,170 @@
-import threading
-from tkinter import *
-from tkinter import simpledialog
-
 import grpc
-
-import chat_pb2 as chat
-import chat_pb2_grpc as rpc
-
-address = 'localhost'
-port = 11912
+import chat_pb2
+import chat_pb2_grpc
 
 
 class Client:
+    def __init__(self):
+        self.channel = grpc.insecure_channel('localhost:50051')
+        self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
+        self.user_id = None
+        self.password = None
 
-    def __init__(self, u: str, talkto: str, window):
-        self.window = window
-        self.username = u
-        self.talkto = talkto
-        channel = grpc.insecure_channel(address + ':' + str(port))
-        self.conn = rpc.ChatServerStub(channel)
-        threading.Thread(target=self.__listen_for_messages,
-                         daemon=True).start()
-        self.__setup_ui()
-        self.window.mainloop()
+    def signUp(self):
+        user_id = input('Enter user ID: ')
+        password = input('Enter password: ')
+        try:
+            response = self.stub.SignUp(chat_pb2.UserCredentials(
+                user_id=user_id, password=password))
+            print('Signed up user:', user_id)
+            self.user_id = user_id
+            self.password = password
+            return True
+        except Exception as e:
+            print(e.details())
+            return False
 
-    def __listen_for_messages(self):
-        """
-        This method will be ran in a separate thread as the main/ui thread, because the for-in call is blocking
-        when waiting for new messages
-        """
-        for note in self.conn.ChatStream(chat.Empty()):  # this line will wait for new messages from the server!
-            # print("[{}] R from [{}] {}".format(note.recipientname,
-            #      note.sendername, note.message))  # debugging statement
-            self.chat_list.insert(END, "[{}] to [{}] {}\n".format(
-                note.sendername, note.recipientname, note.message))  # add the message to the UI
+    def signIn(self):
+        user_id = input('Enter user ID: ')
+        password = input('Enter password: ')
+        try:
+            response = self.stub.SignIn(chat_pb2.UserCredentials(
+                user_id=user_id, password=password))
+            print('Signed in as:', user_id)
+            self.user_id = user_id
+            self.password = password
+            return True
+        except Exception as e:
+            print(e.details())
+            return False
 
-    def send_message(self, event):
-        """
-        This method is called when user enters something into the textbox
-        """
-        message = self.entry_message.get()  # retrieve message from the UI
-        if message != '':
-            n = chat.Note()  # create protobug message (called Note)
-            n.sendername = self.username  # set the username
-            n.recipientname = self.talkto
-            n.message = message  # set the actual message of the note
-            # print("[{}] S to [{}] {}".format(n.sendername,
-            #      n.recipientname, n.message))
-            self.conn.SendNote(n)  # send the Note to the server
-
-    def __setup_ui(self):
-        self.chat_list = Text()
-        self.chat_list.pack(side=TOP)
-        self.lbl_username = Label(self.window, text=self.username)
-        self.lbl_username.pack(side=LEFT)
-        self.entry_message = Entry(self.window, bd=5)
-        self.entry_message.bind('<Return>', self.send_message)
-        self.entry_message.focus()
-        self.entry_message.pack(side=BOTTOM)
-
-
-def login():
-    username = input("Enter the username: ")
-    password = input("Enter the password: ")
-    n = chat.LoginRequest()
-    n.username = username
-    n.password = password
-    channel = grpc.insecure_channel(address + ':' + str(port))
-    conn = rpc.ChatServerStub(channel)
-    print(conn.Login(n))
-
-
-'''def signup():
-    username = input("Enter the username: ")
-    password = input("Enter the password: ")
-    n = chat.SignupRequest()
-    n.username = username
-    n.password = password
-    channel = grpc.insecure_channel(address + ':' + str(port))
-    conn = rpc.ChatServerStub(channel)
-    print(conn.Login(n))'''
-
-
-def choose_operations():
-    while True:
-        option = input(
-            "(1)Sign in\n(2)Sign up\n(3)List existing accounts\n(4)Exit\n")
-        if option == "1":  # TODO
-            login()
-            break
-        elif option == "2":
-            # signup()
-            break
-        elif option == "3":
-            print("listAccounts")
-        elif option == "4":
-            return
+    def signOut(self):
+        if self.user_id:
+            response = self.stub.SignOut(chat_pb2.UserCredentials(
+                user_id=self.user_id, password=self.password))
+            if not response.success:
+                print(response.error_message)
+                return
+            self.user_id = None
+            self.password = None
+            print('Signed out')
         else:
-            print("Invalid option, choose again")
+            print('Not signed in')
 
+    def listUsers(self):
+        try:
+            query = input('Enter user ID query (* for all users): ')
+            print('All users:')
+            for user in self.stub.ListUsers(chat_pb2.UserQuery(query=query)):
+                print(user.user_id)
+        except Exception as e:
+            print(e.details())
+
+    def sendMessage(self):
+        if not self.user_id:
+            print('Not signed in')
+            return
+        try:
+            to_user_id = input('Enter recipient user ID: ')
+            text = input('Enter message text: ')
+            response = self.stub.SendMessage(chat_pb2.Message(
+                from_user_id=self.user_id, to_user_id=to_user_id, text=text, password=self.password))
+            if response.delivered:
+                print('Message delivered')
+            else:
+                print(response.error_message)
+        except Exception as e:
+            print(e.details())
+
+    def receiveMessage(self):
+        if not self.user_id:
+            print('Not signed in')
+            return
+        is_there_q_messages = False
+        print('Messages:')
+        for message in self.stub.ReceiveMessage(chat_pb2.MessageQuery(user_id=self.user_id)):
+            print(message.text)
+            if message.text.strip() != "No new messages.":
+                is_there_q_messages = True
+
+        return is_there_q_messages
+
+    def deleteAccount(self):
+        '''
+        confirm password before delete (ask user to insert password and id)
+        '''
+        if not self.user_id:
+            print('Not signed in')
+
+        is_there_q_messages = self.receiveMessage()
+
+        if is_there_q_messages:
+            print(
+                "You had unread messages. Please check them above before deleting the account.")
+            return
+
+        password = input('Confirm your password: ')
+        try:
+            response = self.stub.DeleteAccount(
+                chat_pb2.UserCredentials(user_id=self.user_id, password=password))
+            print('Account deleted')
+            self.user_id = None
+            self.password = None
+        except Exception as e:
+            print(e.details())
+
+    def signUpOrSignIn(self):
+        while True:
+            print('1. Sign up')
+            print('2. Sign in')
+            choice = input('Enter your choice: ')
+            if choice == '1':
+                return self.signUp()
+            elif choice == '2':
+                return self.signIn()
+            else:
+                print('Invalid choice')
+
+    def run(self):
+        while True:
+            print('Options:')
+            if not self.user_id:
+                isHasAccess = self.signUpOrSignIn()
+            if isHasAccess:
+                print('1. List users')
+                print('2. Send message')
+                print('3. Receive messages')
+                print('4. Delete account')
+                print('5. Sign out')
+                print('6. Quit')
+                choice = input('Enter your choice: ')
+                if choice == '1':
+                    self.listUsers()
+                elif choice == '2':
+                    self.sendMessage()
+                elif choice == '3':
+                    self.receiveMessage()
+                elif choice == '4':
+                    self.deleteAccount()
+                elif choice == '5':
+                    self.signOut()
+                elif choice == '6':
+                    if not self.user_id:
+                        print('No user signed in')
+                        continue
+                    else:
+                        try:
+                            response = self.stub.SignOut(chat_pb2.UserCredentials(
+                                user_id=self.user_id, password=self.password))
+                        except Exception as e:
+                            print("User not found")
+                        print('Signed out')
+                        self.user_id = None
+                        self.password = None
+                        break
+                else:
+                    print('Invalid choice')
 
 if __name__ == '__main__':
-    root = Tk() 
-    frame = Frame(root, width=300, height=300)
-    frame.pack()
-    root.withdraw()
-    choose_operations()
-    username = 'system'
-    talkto = 'test'
-    root.deiconify()
-    c = Client(username, talkto, frame)
-
-    # while username is None:
-    # retrieve a username so we can distinguish all the different clients
-    #    username = simpledialog.askstring(
-    #        "Username", "What's your username?", parent=root)
-    # while talkto is None:
-    #    talkto = simpledialog.askstring(
-    #        "Talkto", "Who do you want to talk to?", parent=root)
+    client = Client()
+    client.run()
