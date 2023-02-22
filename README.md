@@ -2,11 +2,13 @@
 
 ## Installation 
 
-We used Python 3.9+ to develop this program. Please use pip to install all the dependencies. Create a virtual environment, then run:
+We used Python 3.9+ to develop this program. Please use pip to install all the dependencies, run:
 
 ```
 pip install -r requirement.txt
 ```
+If you are a m1 mac user, you might run into difficulties installing grpcio, please refer https://github.com/pietrodn/grpcio-mac-arm-build for some help. 
+
 ## Deployment 
 
 Start the server with 
