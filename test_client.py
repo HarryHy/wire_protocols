@@ -124,8 +124,38 @@ class TestChatClient(unittest.TestCase):
                 result = client.receive_from_listAccounts("NOMATCHED")
                 self.assertEqual(result, 1)
                 self.assertEqual(fake_out.getvalue(), "No matched account found\n")
+                
+    @mock.patch('builtins.input', side_effect=['testusername', 'testpassword'])
+    def test_signup_with_new_username(self, mock_input):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = mock.Mock(side_effect=[
+                'SIGNUP testusername'.encode('ascii'),
+                'NONDUPNAME'.encode('ascii')
+            ])
 
-        
+            # Act
+            result = client.signup('testusername', 'testpassword')
+
+            # Assert
+            self.assertEqual(result, 0)
+
+    @mock.patch('builtins.input', side_effect=['testusername', 'testpassword'])
+    def test_signup_with_existing_username(self, mock_input):
+        # Arrange
+        with mock.patch('socket.socket'):
+            client = ChatClient('localhost', 8000)
+            client.client.recv = mock.Mock(side_effect=[
+                'SIGNUP testusername'.encode('ascii'),
+                'DUPNAME'.encode('ascii')
+            ])
+
+            # Act
+            result = client.signup('testusername', 'testpassword')
+
+            # Assert
+            self.assertEqual(result, 1)
 
 if __name__ == "__main__":
     #mock_socket = mock.Mock()
@@ -140,3 +170,6 @@ if __name__ == "__main__":
     test.test_list_account_option2()
     test.test_receive_from_list_account_nomatched()
     test.test_receive_from_list_account_matched()
+    test.test_signup_with_existing_username()
+    test.test_signup_with_new_username()
+    
