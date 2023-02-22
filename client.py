@@ -17,16 +17,24 @@ current_time = now.strftime("%H:%M:%S")
 # def check_dupname():
 
 def login():
+    """
+    Send LOGIN message to the server and prompt user to input username and password
+    """
     try:
+        # Send the 'LOGIN' command to the server
         client.send('LOGIN'.encode('ascii'))
+        # Clear the console
         os.system("cls||clear")
+        # Prompt the user to enter their username and password
         global username
         global password
         username = input("Enter the username: ")
         password = input("Enter the password: ")
+        # Set the 'stop' flag to False, indicating that the client is still running
         global stop
         stop = False
     except Exception as e:
+        # If an error occurs, print an error message and close the connection to the server
         print('Error Occurred in login: ', e)
         if client:
             client.close()
@@ -35,6 +43,11 @@ def login():
 
 
 def signup():  
+    """
+    Handle the process of creating a new account.
+    It prompts the user to create a unique username, sends it to the server for duplicate check, and then asks for a password. 
+    If the username already exists, it prompts the user to choose another one. 
+    """
     os.system('cls||clear')
     # check if username is unique
     global username
@@ -50,8 +63,6 @@ def signup():
             if dup_message == "DUPNAME":
                 print("Username already exists! Change to another one.")
             elif dup_message == "NONDUPNAME":
-                #id = username+current_time
-                #client.send(id.encode('ascii'))
                 password = input("Create your password: ")
                 client.send(password.encode('ascii'))
                 break
@@ -63,14 +74,24 @@ def signup():
 
     
 def listAccounts():
+    """
+    Allows the user to list all or a subset of the accounts by text wildcard.
+    The function prompts the user to choose one of two options: either to list all accounts, or to list accounts by a specific search pattern (wildcard).
+    After receiving a response from the server, the function checks if there are any matched accounts or not. 
+    If no accounts are matched, it prints a message indicating that no matched account was found. 
+    If there are matched accounts, the function sends a message to the server to indicate that it is ready to receive the matched accounts. 
+    Then, the function receives the matched accounts as a pickled object and prints them to the console.
+    """
     os.system('cls||clear')
     # list all or a subset of the accounts by text wildcard
     while True:
+        # Ask the user whether to list all accounts or by wildcard
         option = input("(1)List all \n(2)List by wildcard\n")
         if option == "1":
             client.send('LIST ALL'.encode('ascii'))
             break
         elif option == "2":
+            # Ask the user to input the search pattern
             pattern = input("Input your search pattern: ")
             client.send(('LIST '+pattern).encode('ascii'))
             break
@@ -82,13 +103,18 @@ def listAccounts():
         print("No matched account found")
     elif response == "MATCHED":
         client.send("SENDMATCHED".encode('ascii'))
+        # Receive list of matched accounts from server
         list_bytes = client.recv(4096)
         list_accounts = pickle.loads(list_bytes)
+        # Print each account in the list
         for a in list_accounts:
             print(a)
         
 
 def receive():
+    """
+    Receive messages from the server.
+    """
     print("in receive")
     try:
         while True:
@@ -97,9 +123,7 @@ def receive():
             print("in loop")
         
             message = client.recv(1024).decode('ascii')
-            # print("message is ", message)
             if message == "USERNAME":
-                # print("client trying to send username")
                 client.send(username.encode('ascii'))
                 next_message = client.recv(1024).decode('ascii')
                 if next_message == 'PASSWORD':
@@ -125,11 +149,12 @@ def receive():
         print('Error Occurred: ', e)
         if client:
             client.close()
-
-    #client.send('RESTART'.encode('ascii'))
     choose_operations()
 
 def choose_operations():
+    """
+    Displays a menu of options to the user (sign in, sign up, or list existing accounts), waits for the user to make a choice, and then calls the appropriate function based on the user's choice. 
+    """
     while True:
         option = input("(1)Sign in\n(2)Sign up\n(3)List existing accounts\n")
         if option == "1":
@@ -141,12 +166,16 @@ def choose_operations():
             listAccounts()
         else: 
             print("Invalid option, choose again")
-    # recieve_thread = threading.Thread(target=receive)
-    # recieve_thread.start()
     receive()
-    # recieve_thread.join()
 
 def choose_talkto():
+    """
+    Prompts the user to choose another user to talk to.
+    It sends a "TALKTO" message to the server along with the specified username. 
+    The server responds with a "VALTALKTO" message if the specified username is valid, indicating that the conversation can start. 
+    If the specified username is not valid, the server sends an "INVALTALKTO" message indicating that the user doesn't exist and the user is prompted to try another username. 
+    The function continues to loop until a valid username is entered and the server sends the "VALTALKTO" message.
+    """
     print("please choose who to talk to")
     choose_talk_to_stop = False
     while True:
@@ -155,18 +184,6 @@ def choose_talkto():
         global talkto
         talkto = input("Who do you want to talk to? (specify the username) ")
         client.send(("TALKTO "+talkto).encode('ascii'))
-        # next_message = client.recv(1024)
-        # try :
-        #     next_message.decode('ascii')
-        #     print("next_message is " + next_message)
-        #     print("Start your conversation with "+talkto + "!")
-        #     choose_talk_to_stop = True
-        #     break
-        # except:
-        #     print("The username you were trying to talk to doesn't exist, please try another one. The available users are: \n")
-        #     list_accounts = pickle.loads(next_message)
-        #     for a in list_accounts:
-        #         print(a)
         next_message = client.recv(1024).decode('ascii')
         if next_message == "VALTALKTO":
             print("next_message is " + next_message)
@@ -182,6 +199,11 @@ global receive_begin
 receive_begin = True
 
 def start_conversation():
+    """
+    Starts a conversation with another user, by first receiving conversation history. 
+    If there are any queued messages, it receives them and displays them. 
+    Then, it sends a message to the server to start the chat, and starts two threads to handle writing and receiving messages.
+    """
     #os.system('cls||clear')
     choose_talkto()
     client.send('STARTHIST'.encode('ascii'))
@@ -230,6 +252,10 @@ class delete_account_exception(Exception):
         print(message)
 
 def write_messages():
+    """
+    Write messages from the client to the server.
+    Handles some special cases like exit, switch, and delete.
+    """
     try:
 
         chat_break = False
@@ -271,6 +297,9 @@ def write_messages():
         #client.close()
 
 def receive_messages():
+    """
+    Receives messages from the server and processes them based on their contents
+    """
     online_flag = False
     omit_message = False
     while True:

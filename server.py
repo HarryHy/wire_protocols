@@ -15,6 +15,14 @@ users = []
 
 
 def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
+    """
+    This function has four parameters:
+    client: the client object that is connected to the server
+    addr: the address of the client
+    LOGIN_LIMIT: an integer that limits the number of login attempts a user can make before being blocked from the server
+    login_times: an integer that keeps track of the number of login attempts made by a user
+
+    """
     
     # connect with the client
     # client, addr = server.accept()
@@ -26,6 +34,10 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
             
             operation = client.recv(1024).decode('ascii')
             print("operation is ", operation)
+
+            # If the request is a "LOGIN" request, it checks if the user has exceeded the login limit. 
+            # If the user has exceeded the limit, it sends a "FAIL" message to the client and closes the connection. 
+            # Otherwise, it prompts the user to enter their username and password, checks if the username and password are correct, and either logs the user in or rejects the login attempt.
             if operation == "LOGIN":
                 login_times += 1
                 print("logging...")
@@ -60,7 +72,9 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     # global user
                     # user = username
                     #continue
-                #TODO
+            
+            # If the request is a "SIGNUP" request, it checks if the requested username is already taken. 
+            # If the username is available, it prompts the user to enter a password, generates a unique ID for the new account, and stores the account information in a JSON file.
             elif operation.startswith("SIGNUP"):
                 # check whether the username already exists
                 username = operation.split(" ")[1]
@@ -77,6 +91,9 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     with open("accounts.json", "w") as f:
                         data[username] = {"password": password}
                         json.dump(data, f, indent=4)
+
+            # If the request is a "LIST" request, it searches for usernames that match a given pattern in a JSON file containing account information. 
+            # If there are matches, it sends a list of the matching usernames to the client.
             elif operation.startswith("LIST"):
                 pattern = operation.split(" ")[1]
                 with open('accounts.json') as f:
@@ -96,6 +113,9 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     if next_line == "SENDMATCHED":
                         lists = pickle.dumps(keys)
                         client.send(lists)   
+
+            # If the request is a "TALKTO" request, it checks if the requested username is valid. 
+            # If the username is valid, it adds the user to a set of logged-in users.
             elif operation.startswith("TALKTO"):
                 talkto = operation.split(" ")[1]
                 # check if the talkto username is valid
@@ -109,6 +129,7 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     client.send("INVALTALKTO".encode('ascii'))
                     # lists = pickle.dumps(list(data.keys()))
                     # client.send(lists)
+            # If the request is a "STARTHIST" request, it sends any queued messages from a previous chat session with a user to the current user.
             elif operation == "STARTHIST":
                 # send the queued messages from talkto to user
                 lock.acquire()
@@ -147,7 +168,9 @@ def receive(client, addr, LOGIN_LIMIT = 5, login_times = 0):
                     else:
                         client.send("EMPTY".encode('ascii'))
                 lock.release()
-
+            # If the request is a "STARTCHAT" request, it checks if the requested user is currently logged in. 
+            # If the user is logged in, it starts a chat session. 
+            # Otherwise, it queues the user's messages to be sent to the requested user when they next log in.
             elif operation == "STARTCHAT":
                 # check if the person trying to talkto is online
                 # if online, start chat
@@ -185,6 +208,9 @@ class delete_account_exception(Exception):
         print(message)
 
 def message_receiver(client, talkto, user):
+    """
+    Receives message from the client side. 
+    """
     # A function handling the chatting part
     print("in the message receiver")
     print("talk to is ", talkto, " user is ", user)
