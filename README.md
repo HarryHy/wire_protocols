@@ -2,7 +2,7 @@
 
 ## Installation 
 
-We used Python 3.9+ to develop this program. Please use pip to install all the dependencies. Create a virtual environment, then run:
+We used Python 3.9+ to develop this program. Please use pip to install all the dependencies, run:
 
 ```
 pip install -r requirement.txt
