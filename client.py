@@ -10,7 +10,10 @@ class Client:
         self.user_id = None
         self.password = None
 
-    def signUp(self):
+    def signUp(self): 
+        '''
+        sign up function. 
+    '''
         user_id = input('Enter user ID: ')
         password = input('Enter password: ')
         try:
